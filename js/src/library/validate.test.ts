@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { nodeReader } from "./node-reader";
-import { increasing, interp, safeRelpath, validateLibrary } from "./validate";
+import { nodeReader } from "./node-reader.js";
+import { increasing, interp, safeRelpath, validateLibrary } from "./validate.js";
 
 const vectors = fileURLToPath(new URL("../../../schema/vectors/", import.meta.url));
 const trigaJsiPath = fileURLToPath(new URL("../../../libraries/triga-jsi", import.meta.url));

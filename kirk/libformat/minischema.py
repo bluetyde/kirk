@@ -1,4 +1,4 @@
-"""Minimal JSON Schema checker for the subset used by schema/library.schema.json.
+"""Minimal JSON Schema checker for the subset used by kirk/schemas/library.schema.json.
 
 Standard library only, so the fast checks run on a clean checkout without extra packages.
 Any keyword outside SUPPORTED makes the schema itself invalid (SchemaError): the schema can

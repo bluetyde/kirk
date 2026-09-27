@@ -1,10 +1,10 @@
 // A5-0 smoke test: the toolchain supports the pieces A5-1 builds on.
+import { librarySchema } from "../schemas.js";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import librarySchema from "../../../schema/library.schema.json";
-import { nodeReader } from "./node-reader";
-import { sha256Hex } from "./platform";
+import { nodeReader } from "./node-reader.js";
+import { sha256Hex } from "./platform.js";
 
 const vectors = fileURLToPath(new URL("../../../schema/vectors/", import.meta.url));
 

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { jsonForm, validateCommand, validateSnapshot } from "./validate";
+import { jsonForm, validateCommand, validateSnapshot } from "./validate.js";
 
 const contractVectors = fileURLToPath(
   new URL("../../../schema/contract-vectors/", import.meta.url),

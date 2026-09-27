@@ -4,10 +4,9 @@
  * Ported from pipeline/contracts/validate.py.
  */
 
-import commandSchema from "../../../schema/command.schema.json";
-import snapshotSchema from "../../../schema/snapshot.schema.json";
-import { Validator } from "../library/minischema";
-import type { Issue } from "../library/validate";
+import { commandSchema, snapshotSchema } from "../schemas.js";
+import { Validator } from "../library/minischema.js";
+import type { Issue } from "../library/validate.js";
 
 const commandValidator = new Validator(commandSchema);
 const snapshotValidator = new Validator(snapshotSchema);

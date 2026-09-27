@@ -1,16 +1,36 @@
 {
   "name": "kirk-kinetics",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/sim/testing.*"
+  ],
+  "sideEffects": false,
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:schemas": "node scripts/gen-schemas.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

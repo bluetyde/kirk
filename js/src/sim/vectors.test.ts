@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { jsonForm, validateSnapshot } from "../contracts/validate";
-import { compareDocs } from "./compare";
-import { ENGINE_VERSION } from "./engine";
-import { paramsDigest } from "./params";
-import { engineVectorsDir, loadSyntheticCore } from "./testing";
-import { runScenario } from "./vectors";
+import { jsonForm, validateSnapshot } from "../contracts/validate.js";
+import { compareDocs } from "./compare.js";
+import { ENGINE_VERSION } from "./engine.js";
+import { paramsDigest } from "./params.js";
+import { engineVectorsDir, loadSyntheticCore } from "./testing.js";
+import { runScenario } from "./vectors.js";
 
 describe("Engine golden vectors (the main oracle)", () => {
   it("reproduces every golden vector within declared tolerances and validates snapshots", async () => {

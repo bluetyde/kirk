@@ -11,7 +11,8 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
    (virtual-reactor `41a503c`), which first looked like a +28% steady-state cost. Instrumented over 1000 steady-state steps there is exactly one bisection
    (the `period > 0` leaf of `period-short`, when power turns from slowly falling to slowly rising: a genuine boundary of the trip condition), about 0.06% of the
    right-hand-side calls. Testing period crossings on the inverse period (continuous through the pole) was prototyped and saved almost nothing, so it wasn't kept.
-3. **Packaging.** Python: build and install check of `kirk-kinetics` (PyPI `kirk` is taken). npm: emit JS + `.d.ts` (currently `tsc --noEmit` only), package name `kirk-kinetics`.
+3. ~~Packaging~~ (done 2026-09-27, see the Log). Both packages build, install and pass smoke tests in CI. Not published: publishing needs a
+   decision from the user (PyPI and npm accounts, removing `"private": true` from `js/package.json`). The name `kirk-kinetics` was free on both on 2026-09-27.
 4. ~~CI~~ (added 2026-09-27, see the Log). `.github/workflows/ci.yml` runs on pushes to main and on pull requests. The required-checks
    ruleset exists but is not enforced while the repository is private on a free plan (decided 2026-09-27, see the Log): check CI by hand before merging.
 5. **Codex review of the TS port** (open since virtual-reactor A6-1).
@@ -57,3 +58,16 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
   rulesets or branch protection on private repositories on a free plan, so for now nothing blocks a merge with red CI: check the PR's checks before
   merging. The ruleset takes effect when the repository becomes public (or the plan changes). If a job in `.github/workflows/ci.yml` is renamed,
   update the ruleset's required check names too, or every merge will wait for a check that never reports.
+- 2026-09-27: packaging (NOTES item 3, Claude Code). Both packages are `kirk-kinetics` 0.2.0 (the version follows `ENGINE_VERSION`).
+  The JSON Schemas moved from `schema/` to `kirk/schemas/` so they ship in the wheel, and are loaded with `importlib.resources`. Before this,
+  `kirk.contracts` read `schema/*.json` from the repository root at import time, so an installed package could not even be imported. Their
+  `$id` now points at bluetyde/kirk instead of virtual-reactor. Python: `pyproject.toml` has a build system, package data and a
+  `kirk-validate` console script. TypeScript: `npm run build` emits `dist/` (JS and `.d.ts`) through `tsconfig.build.json`. Entry points are
+  `kirk-kinetics` (browser-safe) and `kirk-kinetics/node` (`nodeReader`). `src/schemas.ts` is generated from `kirk/schemas` by
+  `npm run gen:schemas`, and a test fails if it is out of date. Relative imports now carry `.js` extensions (module `nodenext`), so the output
+  runs in plain Node ESM. CI has a new job, "Packages (build, install, smoke test)". It builds the sdist, wheel and npm tarball, installs each
+  outside the repository, and runs `tests/installed_smoke.py` and `js/scripts/installed-smoke.mjs`. These check the params digest against the
+  golden vectors, the three schemas, the console script, and that the browser entry never reaches a `node:` import. It also typechecks a
+  consumer file against the installed `.d.ts`. Found while testing: run from `js/scripts`, the npm smoke test resolved `kirk-kinetics` to the
+  repository itself through the package self-reference, so CI copies it into the install folder first. The required-checks ruleset lists
+  four jobs; add "Packages (build, install, smoke test)" to it if it should be required once the ruleset is enforced.

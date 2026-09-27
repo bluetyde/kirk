@@ -15,13 +15,13 @@ import math
 import struct
 import sys
 from dataclasses import asdict, dataclass
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
 from .minischema import Validator
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SCHEMA_PATH = REPO_ROOT / "schema" / "library.schema.json"
+SCHEMA_PATH = files("kirk").joinpath("schemas", "library.schema.json")   # package data, so an installed package works
 
 SUPPORTED_VERSIONS = ("0.1.0",)
 SUPPORTED_CAPABILITIES = ("point-kinetics/lumped-thermal-v1",)

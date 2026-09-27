@@ -9,7 +9,7 @@
  *   Model             the compiled form the engine reads (tables, rods, sums)
  */
 
-import { sha256HexSync } from "./sha256";
+import { sha256HexSync } from "./sha256.js";
 
 export const CAPABILITY = "point-kinetics/lumped-thermal-v1";
 export const DIGEST_PREFIX = "kirk-params-v1\n";

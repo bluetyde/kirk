@@ -21,10 +21,25 @@ Validation there: analytic checks (Nordheim–Fuchs within 0.1%, inhour period, 
 | `kirk/` | Engine (`engine.py`), plain engine inputs (`params.py`), numerics (`numerics.py`), golden-vector generator (`vectors.py`) |
 | `kirk/libformat/` | The reactor library format: validator, minimal JSON Schema checker, synthetic test core generator, and the adapter that builds params from a library folder (`adapter.py`) |
 | `kirk/contracts/` | Command and snapshot schemas' validator and fixtures |
-| `schema/` | JSON Schemas, the synthetic core and invalid fixtures, golden vectors, contract fixtures, shared params checks (`params-vectors/`) |
+| `kirk/schemas/` | The JSON Schemas (library, command, snapshot), shipped in the Python package; `js/src/schemas.ts` is generated from them |
+| `schema/` | The synthetic core and invalid fixtures, golden vectors, contract fixtures, shared params checks (`params-vectors/`) |
 | `docs/library-format.md` | The normative library format (v0.1.0, 28 error codes) |
 | `libraries/triga-jsi/` | An example library (experimental) |
-| `js/` | TypeScript port (`src/sim`), validators and library adapter (`src/library`), contracts (`src/contracts`), Vitest tests |
+| `js/` | TypeScript port (`src/sim`), validators and library adapter (`src/library`), contracts (`src/contracts`), package entry points (`src/index.ts`, `src/node.ts`), Vitest tests |
+
+## Install
+
+Both packages are named `kirk-kinetics` (the Python import name is `kirk`). They are not published yet. Build them from a checkout:
+
+```
+python -m pip install .                 # or: python -m build, then install the wheel
+kirk-validate libraries/triga-jsi       # console script for the library validator
+
+cd js && npm ci --ignore-scripts && npm pack   # builds dist/ (JS + .d.ts) and kirk-kinetics-0.2.0.tgz
+```
+
+In TypeScript, `import { Engine, loadParams } from "kirk-kinetics"` works in Node and browsers. `nodeReader`, which reads a
+library folder from disk, is in `kirk-kinetics/node`.
 
 ## Use
 
@@ -54,7 +69,8 @@ only to library folders. The engine also pins a digest of the params content in
 checkpoints and sessions, so an edited copy can never restore a checkpoint made with the original. Without a `validity`
 section the engine reports `unvalidated` (`R_PARAMS_UNVALIDATED`), and without a `shape` section `shape()` is not available.
 
-CI (`.github/workflows/ci.yml`) runs the same commands on Python 3.11 and 3.13 and Node 24 for every pull request.
+CI (`.github/workflows/ci.yml`) runs the same commands on Python 3.11 and 3.13 and Node 24 for every pull request. It also builds both
+packages, installs them outside the repository and runs smoke tests (`tests/installed_smoke.py`, `js/scripts/installed-smoke.mjs`).
 
 Regenerate golden vectors (`python -m kirk.vectors`) and fixtures on Linux Python 3.11: other platforms change the last bits of floats, which the tests tolerate but which adds noise to diffs.
 

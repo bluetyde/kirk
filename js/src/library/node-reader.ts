@@ -1,7 +1,7 @@
 // Node-only LibraryReader for tests and scripts. Browser code must not import this file.
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { LibraryReader } from "./platform";
+import type { LibraryReader } from "./platform.js";
 
 export function nodeReader(folder: string): LibraryReader {
   return {

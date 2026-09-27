@@ -1,8 +1,6 @@
+import { commandSchema, librarySchema, snapshotSchema } from "../schemas.js";
 import { describe, expect, it } from "vitest";
-import commandSchema from "../../../schema/command.schema.json";
-import librarySchema from "../../../schema/library.schema.json";
-import snapshotSchema from "../../../schema/snapshot.schema.json";
-import { checkSchema, SchemaError, Validator } from "./minischema";
+import { checkSchema, SchemaError, Validator } from "./minischema.js";
 
 describe("minischema", () => {
   it("passes checkSchema for all three repo schemas", () => {
