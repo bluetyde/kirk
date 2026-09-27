@@ -6,10 +6,10 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
 
 1. **Plain parameter API.** Today `Engine` needs a `Library` loaded from a validated folder. Define engine inputs as plain data (kinetics, feedback tables,
    thermal, rods, plant) so anyone can drive it without the file format; make `kirk.libformat` an adapter that produces those inputs. Keep the golden vectors passing.
-2. **Trip-locator cost.** The in-step crossing search (M1 review fix, virtual-reactor `41a503c`) bisects every leaf whose sign changes. At steady state
-   the period swings between ±∞, so a period threshold "crosses" every step and costs a wasted bisection: about +28% right-hand-side calls over the first
-   10 steps of the synthetic core (318 → 408). Skip crossings through a pole (both ends beyond a large magnitude with opposite signs), and keep test 2
-   of `TestM1ReviewRegressions` passing.
+2. ~~Trip-locator cost~~ (checked 2026-09-27, nothing to fix). The contract fixtures' `rhsCalls` went from 318 to 408 after the in-step crossing search
+   (virtual-reactor `41a503c`), which first looked like a +28% steady-state cost. Instrumented over 1000 steady-state steps there is exactly one bisection
+   (the `period > 0` leaf of `period-short`, when power turns from slowly falling to slowly rising: a genuine boundary of the trip condition), about 0.06% of the
+   right-hand-side calls. Testing period crossings on the inverse period (continuous through the pole) was prototyped and saved almost nothing, so it wasn't kept.
 3. **Packaging.** Python: build and install check of `kirk-kinetics` (PyPI `kirk` is taken). npm: emit JS + `.d.ts` (currently `tsc --noEmit` only), package name `kirk-kinetics`.
 4. **CI.** GitHub Actions: Python 3.11 and 3.13 (`python -m unittest`), Node 24 (`npm ci --ignore-scripts && npm test && npm run typecheck`).
 5. **Codex review of the TS port** (open since virtual-reactor A6-1).
