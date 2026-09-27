@@ -12,8 +12,8 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
    (the `period > 0` leaf of `period-short`, when power turns from slowly falling to slowly rising: a genuine boundary of the trip condition), about 0.06% of the
    right-hand-side calls. Testing period crossings on the inverse period (continuous through the pole) was prototyped and saved almost nothing, so it wasn't kept.
 3. **Packaging.** Python: build and install check of `kirk-kinetics` (PyPI `kirk` is taken). npm: emit JS + `.d.ts` (currently `tsc --noEmit` only), package name `kirk-kinetics`.
-4. ~~CI~~ (added 2026-09-27, see the Log). `.github/workflows/ci.yml` runs on pushes to main and on pull requests. Still to do: make its jobs
-   required checks for main (a repository setting, not a file).
+4. ~~CI~~ (added 2026-09-27, see the Log). `.github/workflows/ci.yml` runs on pushes to main and on pull requests. The required-checks
+   ruleset exists but is not enforced while the repository is private on a free plan (decided 2026-09-27, see the Log): check CI by hand before merging.
 5. **Codex review of the TS port** (open since virtual-reactor A6-1).
 6. **Independence (decided 2026-09-27 by the user).** KIRK is an independent project. virtual-reactor keeps and develops its own engine;
    neither repo depends on the other. Porting a change across is a deliberate choice, not an obligation, so KIRK can change its API freely.
@@ -51,3 +51,9 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
   TypeScript: Node 24 with Python 3.11 for the validator parity test (`npm ci --ignore-scripts`, `npm test`, `npm run typecheck`). Line endings:
   fails on CR bytes in tracked text files. Before pushing, the Python suite passed locally on 3.11.15 (80 tests) and 3.13.12 (80 tests, scipy
   test skipped). Node 24 was not available locally (the container has Node 22), so the first CI run is the first Node 24 run.
+- 2026-09-27: merged CI into main (bluetyde/kirk#2, merge commit `27f0558`, at the user's request). The first run passed on all four jobs
+  (Python 3.11 + scipy, Python 3.13, TypeScript on Node 24, LF line endings), which was also the first Node 24 run of the TypeScript suite.
+- 2026-09-27: required checks (decided by the user). The user created a ruleset for main that requires the four CI jobs. GitHub does not enforce
+  rulesets or branch protection on private repositories on a free plan, so for now nothing blocks a merge with red CI: check the PR's checks before
+  merging. The ruleset takes effect when the repository becomes public (or the plan changes). If a job in `.github/workflows/ci.yml` is renamed,
+  update the ruleset's required check names too, or every merge will wait for a check that never reports.
