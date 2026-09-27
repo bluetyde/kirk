@@ -38,3 +38,9 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
   79 Python and 101 TypeScript tests pass (new: `tests/test_params.py`, `js/src/sim/params.test.ts`, including a cross-language digest case).
 - 2026-09-27: the `python -m kirk.libformat.validate` RuntimeWarning (previous entry) is gone as a side effect: `kirk/__init__` no longer imports
   the validator, and the adapter imports it inside `load_params`. `python -W error -m kirk.libformat.validate libraries/triga-jsi` passes.
+- 2026-09-27: params checks shared across languages (review follow-up, Claude Code). `schema/params-vectors/checks.json` holds the one-rod base core,
+  optional validity and shape sections, 55 check cases (each with hand-written expected paths, confirmed against Python when authored), three
+  digests and a pinned 5 s run. `tests/test_params.py` and `js/src/sim/params.test.ts` both read it, so the two checkers must report the same first
+  path, and TypeScript must match the Python run within the golden-vector tolerance (rel 1e-9). The docs now say that params checks cover structure
+  only: the library validator's physics conventions (tables zero at the reference point, shape sums) apply only to library folders.
+  80 Python and 88 TypeScript tests pass (TypeScript counts fewer because the 15 per-case tests became one test over all 55 shared cases).

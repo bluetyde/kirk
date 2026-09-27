@@ -4,7 +4,10 @@ The engine runs from a ReactorParams object: plain, JSON-shaped data (dicts, lis
 strings, numbers, booleans, None) with the same camelCase keys in Python and
 TypeScript. No files are needed. kirk.libformat builds params from a library folder.
 
-    check_params(p)    structural checks; raises ParamsError with a JSON path
+    check_params(p)    structural checks; raises ParamsError with a JSON path. They make sure the engine
+                       can run, not that the data are physically sensible: the library validator's
+                       conventions (reactivity tables zero at the reference point, shape sums,
+                       provenance) apply only to library folders.
     params_digest(p)   SHA-256 of a canonical encoding; the engine pins it in
                        checkpoints and sessions, so an edited copy can't pass as the original
     Model(p)           the compiled form the engine reads (tables, rods, sums)

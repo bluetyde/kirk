@@ -1,0 +1,1245 @@
+{
+ "note": "Shared by tests/test_params.py and js/src/sim/params.test.ts. Each case applies its edits to base (plus sections when withSections) and expects checkParams to report exactly this first path. Edits: value sets, delete removes, append adds to a list, nonfinite sets NaN (JSON has no NaN). run: the base core with sections, driven by script for steps outer steps; TypeScript must match the Python values in expect within the golden-vector tolerance (rel 1e-9).",
+ "base": {
+  "id": "tiny",
+  "kinetics": {
+   "beta": [
+    0.0002,
+    0.0012,
+    0.0011,
+    0.0024,
+    0.0007,
+    0.0003
+   ],
+   "lambda": [
+    0.0124,
+    0.0305,
+    0.111,
+    0.301,
+    1.14,
+    3.01
+   ],
+   "genTime": 5e-05,
+   "extSource": 1.0
+  },
+  "reference": {
+   "rods": {
+    "control": 0.0
+   },
+   "Tfuel": 300.0,
+   "Tcoolant": 300.0,
+   "rho": -0.02
+  },
+  "rods": [
+   {
+    "id": "control",
+    "speed": 0.1,
+    "pulseCapable": false,
+    "worth": {
+     "x": [
+      0.0,
+      1.0
+     ],
+     "y": [
+      0.0,
+      0.03
+     ]
+    },
+    "scram": {
+     "t": [
+      0.0,
+      0.5
+     ],
+     "x": [
+      1.0,
+      0.0
+     ]
+    }
+   }
+  ],
+  "feedback": {
+   "fuelTemp": {
+    "x": [
+     300.0,
+     1300.0
+    ],
+    "y": [
+     0.0,
+     -0.01
+    ]
+   },
+   "coolantTemp": {
+    "x": [
+     270.0,
+     370.0
+    ],
+    "y": [
+     0.0003,
+     -0.0007
+    ]
+   },
+   "xenon": {
+    "x": [
+     0.0,
+     1e+21
+    ],
+    "y": [
+     0.0,
+     -0.03
+    ]
+   }
+  },
+  "thermal": {
+   "fuelMass": 100.0,
+   "fuelCp": {
+    "x": [
+     300.0,
+     1300.0
+    ],
+    "y": [
+     300.0,
+     400.0
+    ]
+   },
+   "coolantMass": 20000.0,
+   "coolantCp": 4180.0,
+   "hA": 3000.0,
+   "UA": 5000.0,
+   "sinkTemp": 300.0,
+   "hxPump": "main",
+   "fuelFraction": 0.97
+  },
+  "poisons": {
+   "fluxPerWatt": 10000000000.0,
+   "sigmaF": 0.1,
+   "gammaI": 0.064,
+   "gammaXe": 0.0025,
+   "lambdaI": 2.87e-05,
+   "lambdaXe": 2.09e-05,
+   "sigmaXe": 2.6e-18
+  },
+  "plant": {
+   "modes": [
+    "run"
+   ],
+   "initialMode": "run",
+   "pumps": [
+    "main"
+   ],
+   "instruments": [
+    {
+     "id": "nm",
+     "signal": "truth.power",
+     "scale": "log",
+     "range": [
+      0.001,
+      10000000.0
+     ],
+     "lag": 0.0,
+     "noise": 0.0
+    }
+   ],
+   "trips": [
+    {
+     "id": "high",
+     "input": "indicated.nm",
+     "predicate": {
+      "op": "gt",
+      "value": 1000000.0
+     },
+     "latching": true
+    }
+   ],
+   "interlocks": []
+  }
+ },
+ "sections": {
+  "validity": {
+   "status": "experimental",
+   "rods": {
+    "control": [
+     0.0,
+     1.0
+    ]
+   },
+   "Tfuel": [
+    290.0,
+    1300.0
+   ],
+   "Tcoolant": [
+    280.0,
+    370.0
+   ],
+   "xenon": [
+    0.0,
+    1e+21
+   ],
+   "jointChecked": [
+    {
+     "rods": {
+      "control": 0.5
+     }
+    }
+   ]
+  },
+  "shape": {
+   "elements": [
+    "A1"
+   ],
+   "axialEdgesCm": [
+    -10.0,
+    0.0,
+    10.0
+   ],
+   "base": [
+    0.5,
+    0.5
+   ],
+   "rodDeltas": {
+    "control": {
+     "x": [
+      0.0,
+      1.0
+     ],
+     "values": [
+      0.0,
+      0.0,
+      0.05,
+      -0.05
+     ]
+    }
+   },
+   "tempDelta": {
+    "x": [
+     300.0,
+     1300.0
+    ],
+    "values": [
+     0.0,
+     0.0,
+     -0.01,
+     0.01
+    ]
+   }
+  }
+ },
+ "cases": [
+  {
+   "name": "top-level unknown key",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "extra"
+     ],
+     "value": 1
+    }
+   ],
+   "expect": "$.extra"
+  },
+  {
+   "name": "missing section",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "poisons"
+     ],
+     "delete": true
+    }
+   ],
+   "expect": "$.poisons"
+  },
+  {
+   "name": "id empty",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "id"
+     ],
+     "value": ""
+    }
+   ],
+   "expect": "$.id"
+  },
+  {
+   "name": "beta five values",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "beta",
+      5
+     ],
+     "delete": true
+    }
+   ],
+   "expect": "$.kinetics.beta"
+  },
+  {
+   "name": "beta negative",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "beta",
+      2
+     ],
+     "value": -0.001
+    }
+   ],
+   "expect": "$.kinetics.beta[2]"
+  },
+  {
+   "name": "lambda zero",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "lambda",
+      0
+     ],
+     "value": 0.0
+    }
+   ],
+   "expect": "$.kinetics.lambda[0]"
+  },
+  {
+   "name": "genTime zero",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "genTime"
+     ],
+     "value": 0.0
+    }
+   ],
+   "expect": "$.kinetics.genTime"
+  },
+  {
+   "name": "misspelt key",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "genTIme"
+     ],
+     "value": 1.0
+    }
+   ],
+   "expect": "$.kinetics.genTIme"
+  },
+  {
+   "name": "source not a number",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "extSource"
+     ],
+     "value": "1"
+    }
+   ],
+   "expect": "$.kinetics.extSource"
+  },
+  {
+   "name": "source NaN",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "extSource"
+     ],
+     "nonfinite": "nan"
+    }
+   ],
+   "expect": "$.kinetics.extSource"
+  },
+  {
+   "name": "boolean as number",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "kinetics",
+      "genTime"
+     ],
+     "value": true
+    }
+   ],
+   "expect": "$.kinetics.genTime"
+  },
+  {
+   "name": "duplicate rod id",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods"
+     ],
+     "append": {
+      "id": "control",
+      "speed": 0.1,
+      "pulseCapable": false,
+      "worth": {
+       "x": [
+        0.0,
+        1.0
+       ],
+       "y": [
+        0.0,
+        0.03
+       ]
+      },
+      "scram": {
+       "t": [
+        0.0,
+        0.5
+       ],
+       "x": [
+        1.0,
+        0.0
+       ]
+      }
+     }
+    }
+   ],
+   "expect": "$.rods[*].id[1]"
+  },
+  {
+   "name": "rod speed negative",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "speed"
+     ],
+     "value": -0.1
+    }
+   ],
+   "expect": "$.rods[0].speed"
+  },
+  {
+   "name": "pulse rod without fireTime",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "pulseCapable"
+     ],
+     "value": true
+    }
+   ],
+   "expect": "$.rods[0].fireTime"
+  },
+  {
+   "name": "fireTime on a non-pulse rod",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "fireTime"
+     ],
+     "value": 0.1
+    }
+   ],
+   "expect": "$.rods[0].fireTime"
+  },
+  {
+   "name": "worth x not increasing",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "worth",
+      "x"
+     ],
+     "value": [
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "expect": "$.rods[0].worth.x"
+  },
+  {
+   "name": "worth y wrong length",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "worth",
+      "y"
+     ],
+     "value": [
+      0.0
+     ]
+    }
+   ],
+   "expect": "$.rods[0].worth.y"
+  },
+  {
+   "name": "scram starts late",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "scram",
+      "t"
+     ],
+     "value": [
+      0.1,
+      0.5
+     ]
+    }
+   ],
+   "expect": "$.rods[0].scram.t"
+  },
+  {
+   "name": "scram rises",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "scram",
+      "x"
+     ],
+     "value": [
+      0.5,
+      1.0
+     ]
+    }
+   ],
+   "expect": "$.rods[0].scram.x"
+  },
+  {
+   "name": "scram out of range",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "scram",
+      "x"
+     ],
+     "value": [
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "expect": "$.rods[0].scram.x[0]"
+  },
+  {
+   "name": "scram ends out",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "rods",
+      0,
+      "scram",
+      "x"
+     ],
+     "value": [
+      1.0,
+      0.5
+     ]
+    }
+   ],
+   "expect": "$.rods[0].scram.x"
+  },
+  {
+   "name": "reference unknown rod",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "reference",
+      "rods",
+      "ghost"
+     ],
+     "value": 0.0
+    }
+   ],
+   "expect": "$.reference.rods.ghost"
+  },
+  {
+   "name": "reference missing rod",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "reference",
+      "rods",
+      "control"
+     ],
+     "delete": true
+    }
+   ],
+   "expect": "$.reference.rods.control"
+  },
+  {
+   "name": "reference rod out of range",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "reference",
+      "rods",
+      "control"
+     ],
+     "value": 1.2
+    }
+   ],
+   "expect": "$.reference.rods.control"
+  },
+  {
+   "name": "table bad outOfRange",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "feedback",
+      "xenon",
+      "outOfRange"
+     ],
+     "value": "wrap"
+    }
+   ],
+   "expect": "$.feedback.xenon.outOfRange"
+  },
+  {
+   "name": "table one point",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "feedback",
+      "fuelTemp"
+     ],
+     "value": {
+      "x": [
+       300.0
+      ],
+      "y": [
+       0.0
+      ]
+     }
+    }
+   ],
+   "expect": "$.feedback.fuelTemp.x"
+  },
+  {
+   "name": "initialMode unknown",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "initialMode"
+     ],
+     "value": "idle"
+    }
+   ],
+   "expect": "$.plant.initialMode"
+  },
+  {
+   "name": "duplicate pump",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "pumps"
+     ],
+     "append": "main"
+    }
+   ],
+   "expect": "$.plant.pumps[1]"
+  },
+  {
+   "name": "fuelCp zero",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "thermal",
+      "fuelCp",
+      "y",
+      1
+     ],
+     "value": 0.0
+    }
+   ],
+   "expect": "$.thermal.fuelCp.y[1]"
+  },
+  {
+   "name": "hxPump unknown",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "thermal",
+      "hxPump"
+     ],
+     "value": "spare"
+    }
+   ],
+   "expect": "$.thermal.hxPump"
+  },
+  {
+   "name": "fuelFraction above 1",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "thermal",
+      "fuelFraction"
+     ],
+     "value": 1.2
+    }
+   ],
+   "expect": "$.thermal.fuelFraction"
+  },
+  {
+   "name": "poison negative",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "poisons",
+      "sigmaF"
+     ],
+     "value": -1.0
+    }
+   ],
+   "expect": "$.poisons.sigmaF"
+  },
+  {
+   "name": "lambdaXe zero",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "poisons",
+      "lambdaXe"
+     ],
+     "value": 0.0
+    }
+   ],
+   "expect": "$.poisons.lambdaXe"
+  },
+  {
+   "name": "instrument measures mode",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "instruments",
+      0,
+      "signal"
+     ],
+     "value": "truth.mode"
+    }
+   ],
+   "expect": "$.plant.instruments[0].signal"
+  },
+  {
+   "name": "instrument bad scale",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "instruments",
+      0,
+      "scale"
+     ],
+     "value": "db"
+    }
+   ],
+   "expect": "$.plant.instruments[0].scale"
+  },
+  {
+   "name": "instrument range reversed",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "instruments",
+      0,
+      "range"
+     ],
+     "value": [
+      10.0,
+      1.0
+     ]
+    }
+   ],
+   "expect": "$.plant.instruments[0].range"
+  },
+  {
+   "name": "trip unknown input",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "input"
+     ],
+     "value": "indicated.ghost"
+    }
+   ],
+   "expect": "$.plant.trips[0].input"
+  },
+  {
+   "name": "trip string with gt",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate"
+     ],
+     "value": {
+      "op": "gt",
+      "value": "high"
+     }
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.value"
+  },
+  {
+   "name": "trip unknown operator",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate",
+      "op"
+     ],
+     "value": "gte"
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.op"
+  },
+  {
+   "name": "trip between reversed",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate"
+     ],
+     "value": {
+      "op": "between",
+      "value": [
+       2.0,
+       1.0
+      ]
+     }
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.value"
+  },
+  {
+   "name": "trip empty all",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate"
+     ],
+     "value": {
+      "all": []
+     }
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.all"
+  },
+  {
+   "name": "trip nested unknown signal",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate"
+     ],
+     "value": {
+      "any": [
+       {
+        "op": "gt",
+        "value": 1.0
+       },
+       {
+        "not": {
+         "signal": "truth.rod.ghost",
+         "op": "gt",
+         "value": 0.5
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.any[1].not"
+  },
+  {
+   "name": "trip mode ordering on mode signal",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "predicate"
+     ],
+     "value": {
+      "signal": "truth.mode",
+      "op": "gt",
+      "value": 1.0
+     }
+    }
+   ],
+   "expect": "$.plant.trips[0].predicate.op"
+  },
+  {
+   "name": "trip unknown mode",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "modes"
+     ],
+     "value": [
+      "idle"
+     ]
+    }
+   ],
+   "expect": "$.plant.trips[0].modes[0]"
+  },
+  {
+   "name": "trip latching not boolean",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "trips",
+      0,
+      "latching"
+     ],
+     "value": 1
+    }
+   ],
+   "expect": "$.plant.trips[0].latching"
+  },
+  {
+   "name": "interlock without signal",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "interlocks"
+     ],
+     "append": {
+      "id": "x",
+      "when": {
+       "op": "gt",
+       "value": 1.0
+      },
+      "blocks": [
+       "rod.move"
+      ],
+      "reason": "r"
+     }
+    }
+   ],
+   "expect": "$.plant.interlocks[0].when"
+  },
+  {
+   "name": "interlock unknown command",
+   "withSections": false,
+   "edits": [
+    {
+     "path": [
+      "plant",
+      "interlocks"
+     ],
+     "append": {
+      "id": "x",
+      "when": {
+       "signal": "truth.power",
+       "op": "gt",
+       "value": 1.0
+      },
+      "blocks": [
+       "rod.warp"
+      ],
+      "reason": "r"
+     }
+    }
+   ],
+   "expect": "$.plant.interlocks[0].blocks[0]"
+  },
+  {
+   "name": "validity bad status",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "validity",
+      "status"
+     ],
+     "value": "certified"
+    }
+   ],
+   "expect": "$.validity.status"
+  },
+  {
+   "name": "validity missing rod",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "validity",
+      "rods",
+      "control"
+     ],
+     "delete": true
+    }
+   ],
+   "expect": "$.validity.rods.control"
+  },
+  {
+   "name": "validity reversed interval",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "validity",
+      "Tfuel"
+     ],
+     "value": [
+      1300.0,
+      290.0
+     ]
+    }
+   ],
+   "expect": "$.validity.Tfuel"
+  },
+  {
+   "name": "jointChecked unknown rod",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "validity",
+      "jointChecked",
+      0,
+      "rods",
+      "ghost"
+     ],
+     "value": 0.5
+    }
+   ],
+   "expect": "$.validity.jointChecked[0].rods.ghost"
+  },
+  {
+   "name": "shape base wrong length",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "shape",
+      "base"
+     ],
+     "value": [
+      1.0
+     ]
+    }
+   ],
+   "expect": "$.shape.base"
+  },
+  {
+   "name": "shape unknown rod",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "shape",
+      "rodDeltas",
+      "ghost"
+     ],
+     "value": {
+      "x": [
+       0.0,
+       1.0
+      ],
+      "values": [
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    }
+   ],
+   "expect": "$.shape.rodDeltas.ghost"
+  },
+  {
+   "name": "shape delta wrong length",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "shape",
+      "tempDelta",
+      "values"
+     ],
+     "value": [
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "expect": "$.shape.tempDelta.values"
+  },
+  {
+   "name": "shape edges not increasing",
+   "withSections": true,
+   "edits": [
+    {
+     "path": [
+      "shape",
+      "axialEdgesCm"
+     ],
+     "value": [
+      0.0,
+      0.0,
+      10.0
+     ]
+    }
+   ],
+   "expect": "$.shape.axialEdgesCm"
+  }
+ ],
+ "digests": {
+  "base": "0894eaa7889083f9fd99710622236ff4a9c31b98899ef7aa5b6f8617a907af2a",
+  "baseWithSections": "3481d2d8fef2234cc6f9562fb304adb7f5fc592330d8a65bb533c982840986c5",
+  "mixed": {
+   "value": {
+    "b": [
+     1,
+     2.5,
+     -0.0,
+     1e-300,
+     true,
+     null
+    ],
+    "a": "Å\n\"x\"",
+    "c": {
+     "z": [],
+     "y": {}
+    },
+    "é": 3
+   },
+   "digest": "85b44f7a31d2c68c407623a33be213a7563db02e7b9f035646408b27422da14a"
+  }
+ },
+ "run": {
+  "init": {
+   "poisons": {
+    "mode": "zero"
+   }
+  },
+  "seed": 3,
+  "config": {
+   "outerDt": 0.01
+  },
+  "script": [
+   {
+    "step": 0,
+    "cmd": {
+     "type": "rod.move",
+     "rod": "control",
+     "direction": "out"
+    }
+   },
+   {
+    "step": 300,
+    "cmd": {
+     "type": "scram"
+    }
+   }
+  ],
+  "steps": 500,
+  "expect": {
+   "power": 0.002540276454900039,
+   "fuelTemp": 300.00000036841533,
+   "peakPower": 0.003967061040365253,
+   "indicated": 0.002540276454900039,
+   "validity": {
+    "status": "unvalidated",
+    "reasons": [
+     "R_LIBRARY_EXPERIMENTAL"
+    ]
+   },
+   "shape": [
+    0.49999999999631584,
+    0.5000000000036842
+   ],
+   "latched": [
+    "manual"
+   ]
+  }
+ }
+}

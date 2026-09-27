@@ -21,7 +21,7 @@ Validation there: analytic checks (Nordheim–Fuchs within 0.1%, inhour period, 
 | `kirk/` | Engine (`engine.py`), plain engine inputs (`params.py`), numerics (`numerics.py`), golden-vector generator (`vectors.py`) |
 | `kirk/libformat/` | The reactor library format: validator, minimal JSON Schema checker, synthetic test core generator, and the adapter that builds params from a library folder (`adapter.py`) |
 | `kirk/contracts/` | Command and snapshot schemas' validator and fixtures |
-| `schema/` | JSON Schemas, the synthetic core and invalid fixtures, golden vectors, contract fixtures |
+| `schema/` | JSON Schemas, the synthetic core and invalid fixtures, golden vectors, contract fixtures, shared params checks (`params-vectors/`) |
 | `docs/library-format.md` | The normative library format (v0.1.0, 28 error codes) |
 | `libraries/triga-jsi/` | An example library (experimental) |
 | `js/` | TypeScript port (`src/sim`), validators and library adapter (`src/library`), contracts (`src/contracts`), Vitest tests |
@@ -47,8 +47,10 @@ e.advance(10.0)
 print(e.snapshot()["truth"]["power"])
 ```
 
-You can also write params by hand, or change a copy of loaded params (`tests/test_params.py` has a complete one-rod core).
-The engine checks params (`ParamsError` names the JSON path of the first problem) and pins a digest of their content in
+You can also write params by hand, or change a copy of loaded params (`schema/params-vectors/checks.json` has a complete one-rod core under `base`).
+The engine checks the structure of params (`ParamsError` names the JSON path of the first problem). It does not check
+physical sense: the library validator's conventions, such as reactivity tables that are zero at the reference point, apply
+only to library folders. The engine also pins a digest of the params content in
 checkpoints and sessions, so an edited copy can never restore a checkpoint made with the original. Without a `validity`
 section the engine reports `unvalidated` (`R_PARAMS_UNVALIDATED`), and without a `shape` section `shape()` is not available.
 

@@ -1,69 +1,42 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CheckpointError, Engine, IP } from "./engine";
 import { ParamsError, canon, checkParams, paramsDigest, type ReactorParams } from "./params";
 import { sha256HexSync } from "./sha256";
 
-// Same case and value as tests/test_params.py, so both languages hash alike.
-const DIGEST_CASE = { b: [1, 2.5, -0.0, 1e-300, true, null], a: "Å\n\"x\"", c: { z: [], y: {} }, "é": 3 };
-const DIGEST_CASE_HEX = "85b44f7a31d2c68c407623a33be213a7563db02e7b9f035646408b27422da14a";
+// Shared with tests/test_params.py: the base core, check cases, digests and a pinned run both languages must agree on.
+const CHECKS = JSON.parse(
+  readFileSync(fileURLToPath(new URL("../../../schema/params-vectors/checks.json", import.meta.url)), "utf-8"),
+);
 
 /** A made-up one-rod core, written by hand: no library folder, no validity or shape sections. */
 function tinyCore(): ReactorParams {
-  return {
-    id: "tiny",
-    kinetics: {
-      beta: [0.0002, 0.0012, 0.0011, 0.0024, 0.0007, 0.0003],
-      lambda: [0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01],
-      genTime: 5e-5,
-      extSource: 1.0,
-    },
-    reference: { rods: { control: 0.0 }, Tfuel: 300.0, Tcoolant: 300.0, rho: -0.02 },
-    rods: [
-      {
-        id: "control",
-        speed: 0.1,
-        pulseCapable: false,
-        worth: { x: [0.0, 1.0], y: [0.0, 0.03] },
-        scram: { t: [0.0, 0.5], x: [1.0, 0.0] },
-      },
-    ],
-    feedback: {
-      fuelTemp: { x: [300.0, 1300.0], y: [0.0, -0.01] },
-      coolantTemp: { x: [270.0, 370.0], y: [0.0003, -0.0007] },
-      xenon: { x: [0.0, 1e21], y: [0.0, -0.03] },
-    },
-    thermal: {
-      fuelMass: 100.0,
-      fuelCp: { x: [300.0, 1300.0], y: [300.0, 400.0] },
-      coolantMass: 2e4,
-      coolantCp: 4180.0,
-      hA: 3000.0,
-      UA: 5000.0,
-      sinkTemp: 300.0,
-      hxPump: "main",
-      fuelFraction: 0.97,
-    },
-    poisons: {
-      fluxPerWatt: 1e10,
-      sigmaF: 0.1,
-      gammaI: 0.064,
-      gammaXe: 0.0025,
-      lambdaI: 2.87e-5,
-      lambdaXe: 2.09e-5,
-      sigmaXe: 2.6e-18,
-    },
-    plant: {
-      modes: ["run"],
-      initialMode: "run",
-      pumps: ["main"],
-      instruments: [
-        { id: "nm", signal: "truth.power", scale: "log", range: [1e-3, 1e7], lag: 0.0, noise: 0.0 },
-      ],
-      trips: [{ id: "high", input: "indicated.nm", predicate: { op: "gt", value: 1e6 }, latching: true }],
-      interlocks: [],
-    },
-  };
+  return structuredClone(CHECKS.base);
+}
+
+function withSections(p: ReactorParams): ReactorParams {
+  return { ...p, ...structuredClone(CHECKS.sections) };
+}
+
+function applyEdits(p: any, edits: any[]): void {
+  for (const ed of edits) {
+    const path = [...ed.path];
+    const last = path.pop();
+    let node = p;
+    for (const k of path) node = node[k];
+    if (Object.hasOwn(ed, "value")) {
+      node[last] = structuredClone(ed.value);
+    } else if (ed.delete) {
+      if (Array.isArray(node)) node.splice(last, 1);
+      else delete node[last];
+    } else if (Object.hasOwn(ed, "append")) {
+      node[last].push(structuredClone(ed.append));
+    } else {
+      node[last] = Number(ed.nonfinite); // "nan" -> NaN
+    }
+  }
 }
 
 describe("plain params", () => {
@@ -92,50 +65,61 @@ describe("plain params", () => {
 });
 
 describe("checks", () => {
-  const cases: [(p: any) => void, string][] = [
-    [(p) => p.kinetics.beta.pop(), "$.kinetics.beta"],
-    [(p) => (p.kinetics.genTime = 0.0), "$.kinetics.genTime"],
-    [(p) => (p.kinetics.genTIme = 1.0), "$.kinetics.genTIme"],
-    [(p) => delete p.poisons, "$.poisons"],
-    [(p) => (p.feedback.fuelTemp.x = [300.0, 300.0]), "$.feedback.fuelTemp.x"],
-    [(p) => (p.feedback.xenon.outOfRange = "wrap"), "$.feedback.xenon.outOfRange"],
-    [(p) => (p.rods[0].pulseCapable = true), "$.rods[0].fireTime"],
-    [(p) => (p.rods[0].scram.x = [1.0, 0.5]), "$.rods[0].scram.x"],
-    [(p) => (p.reference.rods.ghost = 0.0), "$.reference.rods.ghost"],
-    [(p) => (p.thermal.hxPump = "spare"), "$.thermal.hxPump"],
-    [(p) => (p.kinetics.extSource = NaN), "$.kinetics.extSource"],
-    [(p) => (p.plant.instruments[0].signal = "truth.mode"), "$.plant.instruments[0].signal"],
-    [(p) => (p.plant.trips[0].input = "indicated.ghost"), "$.plant.trips[0].input"],
-    [(p) => (p.plant.trips[0].predicate = { op: "gt", value: "high" }), "$.plant.trips[0].predicate.value"],
-    [
-      (p) => p.plant.interlocks.push({ id: "x", when: { op: "gt", value: 1.0 }, blocks: ["rod.move"], reason: "r" }),
-      "$.plant.interlocks[0].when",
-    ],
-  ];
-
-  it("the tiny core passes", () => {
+  it("valid cores pass", () => {
     checkParams(tinyCore());
+    checkParams(withSections(tinyCore()));
   });
 
-  for (const [change, path] of cases) {
-    it(`reports ${path}`, () => {
-      const p = tinyCore();
-      change(p);
+  it("shared cases report the same path as Python", () => {
+    expect(CHECKS.cases.length).toBeGreaterThanOrEqual(50);
+    for (const c of CHECKS.cases) {
+      const p = c.withSections ? withSections(tinyCore()) : tinyCore();
+      applyEdits(p, c.edits);
       let err: unknown = null;
       try {
         checkParams(p);
       } catch (e) {
         err = e;
       }
-      expect(err).toBeInstanceOf(ParamsError);
-      expect((err as ParamsError).path).toBe(path);
-    });
-  }
+      expect(err, c.name).toBeInstanceOf(ParamsError);
+      expect((err as ParamsError).path, c.name).toBe(c.expect);
+    }
+  });
 
   it("the engine checks before running", () => {
     const p: any = tinyCore();
     p.kinetics.lambda = [1.0, 1.0, 1.0, 1.0, 1.0];
     expect(() => new Engine(p)).toThrow(ParamsError);
+  });
+});
+
+describe("shared run", () => {
+  it("matches the values Python pinned (golden-vector tolerance, rel 1e-9)", () => {
+    const run = CHECKS.run;
+    const e = new Engine(withSections(tinyCore()), run.init, run.seed, run.config);
+    for (let k = 0; k < run.steps; k++) {
+      for (const item of run.script) {
+        if (item.step === k) e.submit(item.cmd);
+      }
+      e.step();
+    }
+    const s = e.snapshot(true);
+    const want = run.expect;
+    const got: Record<string, number> = {
+      power: s.truth.power,
+      fuelTemp: s.truth.fuelTemp,
+      peakPower: e.peakPower,
+      indicated: s.indicated.nm,
+    };
+    for (const [key, value] of Object.entries(got)) {
+      expect(Math.abs(value - want[key]), key).toBeLessThan(1e-9 * Math.abs(want[key]));
+    }
+    expect(s.truth.shape.length).toBe(want.shape.length);
+    s.truth.shape.forEach((x: number, i: number) => {
+      expect(Math.abs(x - want.shape[i])).toBeLessThan(1e-9 * Math.abs(want.shape[i]));
+    });
+    expect(s.validity).toEqual(want.validity);
+    expect(s.trips.latched).toEqual(want.latched);
   });
 });
 
@@ -146,8 +130,11 @@ describe("digest", () => {
     expect(out.join("")).toBe('{"a":"\\u00e9","b":[f3ff0000000000000,f8000000000000000]}');
   });
 
-  it("matches Python on the cross-language case", () => {
-    expect(paramsDigest(DIGEST_CASE)).toBe(DIGEST_CASE_HEX);
+  it("matches the digests Python pinned", () => {
+    const d = CHECKS.digests;
+    expect(paramsDigest(tinyCore())).toBe(d.base);
+    expect(paramsDigest(withSections(tinyCore()))).toBe(d.baseWithSections);
+    expect(paramsDigest(d.mixed.value)).toBe(d.mixed.digest);
   });
 
   it("follows content, not key order", () => {

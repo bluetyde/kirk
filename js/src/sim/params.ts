@@ -3,7 +3,8 @@
  *
  * Ported from kirk/params.py: the same JSON-shaped data, checks, canonical digest and compiled form.
  *
- *   checkParams(p)    structural checks; throws ParamsError with a JSON path
+ *   checkParams(p)    structural checks; throws ParamsError with a JSON path (structure only: the
+ *                     library validator's physics conventions apply only to library folders)
  *   paramsDigest(p)   SHA-256 of a canonical encoding (identical bytes to Python)
  *   Model             the compiled form the engine reads (tables, rods, sums)
  */
