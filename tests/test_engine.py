@@ -5,38 +5,46 @@ Analytic references state their assumptions in each test (plan 01).
 """
 from __future__ import annotations
 
+import copy
+import functools
 import json
 import math
 import unittest
 from pathlib import Path
 
-from kirk import CheckpointError, Engine, InitError, Library
+from kirk import CheckpointError, Engine, InitError, Model
 from kirk.engine import IEP, IEH, IP, ITC, ITF, IX
-from kirk.library import Table
+from kirk.libformat import load_params
 
 FIXTURE = Path(__file__).resolve().parents[1] / "schema" / "vectors" / "synthetic-core"
 
 
+@functools.cache
+def _fixture():
+    return load_params(FIXTURE)
+
+
 def lib():
-    return Library(FIXTURE)
+    """Synthetic-core params: a fresh copy each call, so a test can change it freely."""
+    return copy.deepcopy(_fixture())
 
 
 def kinetics_only_lib():
     """Synthetic core with no source, no feedback, and a calibration that makes the reference state critical.
-    Test-only overrides; the digest changes so these runs can't pass as the real fixture."""
+    The params digest follows the content, so these runs can't pass as the real fixture."""
     L = lib()
-    L.ext_source = 0.0
-    L.calibration = -L.ref_rho
-    flat = Table([0.0, 5000.0], [0.0, 0.0])
-    L.fuel_temp, L.cool_temp = flat, flat
-    L.xenon = Table([0.0, 1e30], [0.0, 0.0])
-    L.mark_modified("kinetics-only")
+    L["kinetics"]["extSource"] = 0.0
+    L["reference"]["calibration"] = -L["reference"]["rho"]
+    L["feedback"]["fuelTemp"] = {"x": [0.0, 5000.0], "y": [0.0, 0.0]}
+    L["feedback"]["coolantTemp"] = {"x": [0.0, 5000.0], "y": [0.0, 0.0]}
+    L["feedback"]["xenon"] = {"x": [0.0, 1e30], "y": [0.0, 0.0]}
     return L
 
 
 def inhour_omega(L, rho):
     """Positive root of rho = w*Lambda + sum beta_i w / (w + lambda_i), by bisection."""
-    f = lambda w: w * L.gen_time + sum(b * w / (w + l) for b, l in zip(L.beta, L.lam)) - rho
+    M = Model(L)
+    f = lambda w: w * M.gen_time + sum(b * w / (w + l) for b, l in zip(M.beta, M.lam)) - rho
     lo, hi = 1e-12, 1e3
     for _ in range(200):
         mid = 0.5 * (lo + hi)
@@ -46,8 +54,9 @@ def inhour_omega(L, rho):
 
 def near_critical_rods(L, target_rho):
     """Safety fully out, transient in, regulating placed so the reference-temperature reactivity is target_rho."""
-    base = L.ref_rho + L.rod_by_id["safety"].worth(1.0)
-    reg = L.rod_by_id["regulating"].worth
+    M = Model(L)
+    base = M.ref_rho + M.rod_by_id["safety"].worth(1.0)
+    reg = M.rod_by_id["regulating"].worth
     lo, hi = 0.0, 1.0
     for _ in range(100):
         mid = 0.5 * (lo + hi)
@@ -58,9 +67,10 @@ def near_critical_rods(L, target_rho):
 class TestInitialization(unittest.TestCase):
     def test_source_equilibrium_matches_formula_and_holds(self):
         L = lib()
+        M = Model(L)
         e = Engine(L, {})
         rho = e.reactivity(0.0, e.y)["total"]
-        self.assertAlmostEqual(e.y[IP], -L.ext_source * L.gen_time / rho, delta=1e-15)
+        self.assertAlmostEqual(e.y[IP], -M.ext_source * M.gen_time / rho, delta=1e-15)
         p0 = e.y[IP]
         e.advance(20.0)
         self.assertLess(abs(e.y[IP] / p0 - 1.0), 1e-8)
@@ -93,11 +103,12 @@ class TestKineticsAnalytic(unittest.TestCase):
     def test_prompt_jump(self):
         """P1/P0 = beta/(beta - rho) after the prompt transient (delayed growth over 50 ms is ~0.1%)."""
         L = kinetics_only_lib()
+        M = Model(L)
         e = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}})
         rho = 0.001
         e.submit({"type": "fault.reactivity", "deltaRho": rho})
         e.advance(0.05)
-        expected = L.beta_total / (L.beta_total - rho)
+        expected = M.beta_total / (M.beta_total - rho)
         self.assertLess(abs(e.y[IP] / expected - 1.0), 3e-3)
 
     def test_stable_period_matches_inhour(self):
@@ -115,14 +126,13 @@ class TestKineticsAnalytic(unittest.TestCase):
     @staticmethod
     def _pulse_lib(delayed_return: bool):
         L = kinetics_only_lib()
-        alpha, c, Tref = -1e-4, 320.0, L.ref_tfuel
-        L.fuel_temp = Table([0.0, 3000.0], [alpha * (0.0 - Tref), alpha * (3000.0 - Tref)])
-        L.fuel_cp = Table([0.0, 3000.0], [c, c])
-        L.hA = 0.0
+        alpha, c, Tref = -1e-4, 320.0, L["reference"]["Tfuel"]
+        L["feedback"]["fuelTemp"] = {"x": [0.0, 3000.0], "y": [alpha * (0.0 - Tref), alpha * (3000.0 - Tref)]}
+        L["thermal"]["fuelCp"] = {"x": [0.0, 3000.0], "y": [c, c]}
+        L["thermal"]["hA"] = 0.0
         if not delayed_return:
-            L.lam = [1e-12] * 6     # precursors form but never decay back during the pulse
-        L.mark_modified(f"nordheim-fuchs-{delayed_return}")
-        return L, abs(alpha) / (L.fuel_mass * c)
+            L["kinetics"]["lambda"] = [1e-12] * 6     # precursors form but never decay back during the pulse
+        return L, abs(alpha) / (L["thermal"]["fuelMass"] * c)
 
     def test_nordheim_fuchs_pulse(self):
         """Nordheim-Fuchs assumptions: adiabatic, constant temperature coefficient, prompt neutrons only
@@ -130,16 +140,17 @@ class TestKineticsAnalytic(unittest.TestCase):
         P_max = rho_p^2 / (2 K Lambda), energy = 2 rho_p / K, FWHM = 3.52 Lambda / rho_p, K = |alpha_T| / (m c).
         The test enforces the no-return assumption; test_delayed_return_raises_the_peak covers the full model."""
         L, K = self._pulse_lib(delayed_return=False)
-        m = L.fuel_mass
+        M = Model(L)
+        m = M.fuel_mass
         rho_p = 0.003
         e = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}}, config={"outerDt": 1e-3})
-        e.submit({"type": "fault.reactivity", "deltaRho": L.beta_total + rho_p})
+        e.submit({"type": "fault.reactivity", "deltaRho": M.beta_total + rho_p})
         times, powers = [], []
         while e.t < 0.6:
             e.step()
             times.append(e.t)
             powers.append(e.y[IP])
-        p_max = rho_p ** 2 / (2 * K * L.gen_time)
+        p_max = rho_p ** 2 / (2 * K * M.gen_time)
         self.assertLess(abs(e.peak_power / p_max - 1.0), 1e-3)
         half = e.peak_power / 2
         crossings = []
@@ -147,10 +158,10 @@ class TestKineticsAnalytic(unittest.TestCase):
             if (p0 - half) * (p1 - half) < 0:
                 crossings.append(t0 + (half - p0) / (p1 - p0) * (t1 - t0))
         self.assertEqual(len(crossings), 2)
-        self.assertLess(abs((crossings[1] - crossings[0]) / (3.52 * L.gen_time / rho_p) - 1.0), 0.03)
+        self.assertLess(abs((crossings[1] - crossings[0]) / (3.52 * M.gen_time / rho_p) - 1.0), 0.03)
         k_end = next(i for i, p in enumerate(powers) if times[i] > e.peak_time and p < e.peak_power / 100)
         e2 = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}}, config={"outerDt": 1e-3})
-        e2.submit({"type": "fault.reactivity", "deltaRho": L.beta_total + rho_p})
+        e2.submit({"type": "fault.reactivity", "deltaRho": M.beta_total + rho_p})
         e2.advance(times[k_end])
         self.assertLess(abs(e2.y[IEP] / (2 * rho_p / K) - 1.0), 0.03)
 
@@ -158,10 +169,11 @@ class TestKineticsAnalytic(unittest.TestCase):
         """With delayed neutrons returning during the pulse, the peak is a few percent above Nordheim-Fuchs
         (3.4% for this core, measured 2026-09-26 and unchanged at rtol 1e-8). Guards against the effect vanishing."""
         L, K = self._pulse_lib(delayed_return=True)
+        M = Model(L)
         e = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}}, config={"outerDt": 1e-3})
-        e.submit({"type": "fault.reactivity", "deltaRho": L.beta_total + 0.003})
+        e.submit({"type": "fault.reactivity", "deltaRho": M.beta_total + 0.003})
         e.advance(0.4)
-        ratio = e.peak_power / (0.003 ** 2 / (2 * K * L.gen_time))
+        ratio = e.peak_power / (0.003 ** 2 / (2 * K * M.gen_time))
         self.assertGreater(ratio, 1.01)
         self.assertLess(ratio, 1.06)
 
@@ -176,11 +188,12 @@ class TestPoisonsAndEnergy(unittest.TestCase):
     def test_xenon_peak_after_shutdown(self):
         """After a shutdown from equilibrium (flux ~ 0 afterwards), X(t) = X0 e^-lx t + lI I0/(lx - lI) (e^-lI t - e^-lx t)."""
         L = lib()
+        M = Model(L)
         # rtol 1e-4: the check needs xenon to 1%, and tracking the power decay at 1e-6 would take ~30k order-2 steps
         e = Engine(L, {"power": {"mode": "given", "value": 1e5}, "poisons": {"mode": "equilibrium"}},
                    config={"outerDt": 60.0, "rtol": 1e-4})
         I0, X0 = e.y[9], e.y[IX]
-        li, lx = L.lambda_i, L.lambda_x
+        li, lx = M.lambda_i, M.lambda_x
         xs = []
         for _ in range(20 * 60):
             e.step()
@@ -198,11 +211,12 @@ class TestPoisonsAndEnergy(unittest.TestCase):
     def test_energy_balance(self):
         """Fission energy equals heat stored in fuel and coolant plus heat removed (all power deposited)."""
         L = lib()
+        M = Model(L)
         e = Engine(L, {"rods": near_critical_rods(L, 0.0), "power": {"mode": "given", "value": 1e5}},
                    config={"outerDt": 0.5})
         tf0, tc0 = e.y[ITF], e.y[ITC]
         e.advance(200.0)
-        stored = L.fuel_mass * L.fuel_cp.integral(tf0, e.y[ITF]) + L.cool_mass * L.cool_cp * (e.y[ITC] - tc0)
+        stored = M.fuel_mass * M.fuel_cp.integral(tf0, e.y[ITF]) + M.cool_mass * M.cool_cp * (e.y[ITC] - tc0)
         self.assertGreater(e.y[IEP], 1e5)
         self.assertLess(abs((stored + e.y[IEH]) / e.y[IEP] - 1.0), 1e-4)
 
@@ -224,6 +238,7 @@ class TestRulesAndEvents(unittest.TestCase):
 
     def test_pulse_by_commands_and_feedback_shutdown(self):
         L = lib()
+        M = Model(L)
         e = Engine(L, {"rods": near_critical_rods(L, -0.0005)})
         e.submit({"type": "mode.set", "mode": "pulse"})
         e.step()
@@ -233,7 +248,7 @@ class TestRulesAndEvents(unittest.TestCase):
         self.assertEqual(fired["status"], "accepted")
         self.assertGreater(e.peak_power, 1e7)
         self.assertLess(e.y[IP], e.peak_power / 100)         # fuel feedback ended the pulse
-        self.assertGreater(e.y[ITF] - L.ref_tfuel, 50.0)
+        self.assertGreater(e.y[ITF] - M.ref_tfuel, 50.0)
 
     def test_scram_inserts_all_rods_on_the_profile(self):
         L = lib()
@@ -399,9 +414,8 @@ class TestM1ReviewRegressions(unittest.TestCase):
         times = []
         for dt in (0.01, 0.001):
             L = lib()
-            L.trips = L.trips + [{"id": "window", "input": "truth.rod.transient",
-                                  "predicate": {"op": "between", "value": [0.00008, 0.0001]}, "latching": True}]
-            L.mark_modified("window-trip")
+            L["plant"]["trips"].append({"id": "window", "input": "truth.rod.transient",
+                                        "predicate": {"op": "between", "value": [0.00008, 0.0001]}, "latching": True})
             e = Engine(L, {"rods": near_critical_rods(L, -0.0005)}, config={"outerDt": dt})
             e.submit({"type": "rod.move", "rod": "transient", "direction": "out"})   # 0.02/s: inside the window at 4-5 ms
             e.advance(0.02)
@@ -413,9 +427,7 @@ class TestM1ReviewRegressions(unittest.TestCase):
 
     def test_3_replay_of_a_halted_run_returns(self):
         L = lib()
-        t = L.fuel_temp
-        L.fuel_temp = Table(t.xs, t.ys, "reject")
-        L.mark_modified("reject-fuel-temp")
+        L["feedback"]["fuelTemp"]["outOfRange"] = "reject"
         e = Engine(L, {"Tfuel": 1300.0})
         self.assertTrue(e.halted)
         r = Engine.replay(L, e.session(), 1)          # used to loop forever
@@ -424,8 +436,7 @@ class TestM1ReviewRegressions(unittest.TestCase):
 
     def test_4_heat_capacity_reject_policy_is_enforced(self):
         L = lib()
-        L.fuel_cp = Table([293.15, 300.0], [300.0, 300.0], "reject")
-        L.mark_modified("reject-cp")
+        L["thermal"]["fuelCp"] = {"x": [293.15, 300.0], "y": [300.0, 300.0], "outOfRange": "reject"}
         e = Engine(L, {"Tfuel": 350.0})
         self.assertEqual(e.halted, "R_TABLE_REJECT_fuelCp")
 
@@ -433,7 +444,7 @@ class TestM1ReviewRegressions(unittest.TestCase):
         L = lib()
         e = Engine(L, {"rods": near_critical_rods(L, -0.0005)})
         e.step()
-        e.submit({"type": "pump.set", "pump": L.pumps[0], "on": False})
+        e.submit({"type": "pump.set", "pump": L["plant"]["pumps"][0], "on": False})
         r = Engine.replay(L, json.loads(json.dumps(e.session())), e.step_index)
         self.assertEqual((len(r.pending), r.next_seq), (len(e.pending), e.next_seq))
         e.step()
@@ -453,4 +464,4 @@ class TestM1ReviewRegressions(unittest.TestCase):
                 d["shape"] = [float(n) for n in d["shape"]]
             (dst / "manifest.json").write_text(json.dumps(m, indent=1), encoding="utf-8")
             self.assertEqual(validate_library(dst), [])
-            self.assertEqual(Library(dst).arrays["base"], lib().arrays["base"])
+            self.assertEqual(load_params(dst)["shape"]["base"], lib()["shape"]["base"])

@@ -20,8 +20,8 @@
    "outerDt": 0.01,
    "rtol": 1e-06
   },
-  "engineVersion": "0.1.0",
-  "libraryDigest": "0d325f78069f3c890a797752421ae2b62ba998d41aeb8c12f2a70142b8852f25"
+  "engineVersion": "0.2.0",
+  "paramsDigest": "41ecf081595af36b0fbd89f5c6d9c6bf006282c505541ab926cc685ea1651489"
  },
  "sampleEvery": 10,
  "samples": [

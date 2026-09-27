@@ -5,7 +5,7 @@
  */
 
 import { Engine } from "./engine";
-import { Library } from "./library";
+import { Model, type ReactorParams } from "./params";
 
 export const TOLERANCES = {
   power: { rel: 1e-9, abs: 1e-15 },
@@ -14,9 +14,10 @@ export const TOLERANCES = {
   eventTime: { abs: 1e-9 },
 };
 
-export function nearCriticalRods(lib: Library, targetRho: number): Record<string, number> {
-  const base = lib.refRho + lib.rodById.safety!.worth.at(1.0);
-  const reg = lib.rodById.regulating!.worth;
+export function nearCriticalRods(params: ReactorParams, targetRho: number): Record<string, number> {
+  const m = new Model(params);
+  const base = m.refRho + m.rodById.safety!.worth.at(1.0);
+  const reg = m.rodById.regulating!.worth;
   let lo = 0.0;
   let hi = 1.0;
   for (let i = 0; i < 100; i++) {
@@ -58,11 +59,11 @@ export function sampleFromEngine(e: Engine): Record<string, any> {
 }
 
 export function runScenario(
-  lib: Library,
+  params: ReactorParams,
   sc: Record<string, any>,
   onStep?: (e: Engine) => void,
 ): Record<string, any> {
-  const e = new Engine(lib, sc.init, sc.seed, sc.config);
+  const e = new Engine(params, sc.init, sc.seed, sc.config);
   const sampleEvery = sc.sampleEvery;
   const totalSteps = sc.steps;
 
@@ -106,7 +107,7 @@ export function runScenario(
     steps: sc.steps,
     sampleEvery: sc.sampleEvery,
     script: structuredClone(sc.script),
-    libraryId: lib.id,
+    libraryId: params.id,
     pins: e.pins(),
     samples,
     events: structuredClone(e.events),

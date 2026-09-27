@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from kirk.engine import Engine
-from kirk.library import Library
+from kirk.libformat import load_params
 from kirk.contracts.validate import json_form
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -193,8 +193,7 @@ def generate_fixtures(out: Path = DEFAULT_OUT) -> tuple[int, int]:
             encoding="utf-8", newline="\n",   # LF on Windows too
         )
 
-    lib = Library(SYNTHETIC_CORE)
-    engine = Engine(lib, {}, seed=1)
+    engine = Engine(load_params(SYNTHETIC_CORE), {}, seed=1)
     for _ in range(10):
         engine.step()
     base_snapshot = json_form(engine.snapshot())

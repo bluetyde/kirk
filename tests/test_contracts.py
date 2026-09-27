@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 from kirk.engine import Engine
-from kirk.library import Library
+from kirk.libformat import load_params
 from kirk.vectors import _scenarios
 from kirk.contracts.validate import (
     COMMAND_SCHEMA_PATH,
@@ -39,10 +39,10 @@ class TestContractSchemas(unittest.TestCase):
 class TestEngineOracle(unittest.TestCase):
     def test_all_scenarios_validate(self):
         """Validate engine snapshots and scripted commands across all reference scenarios."""
-        lib = Library(SYNTHETIC_CORE)
-        for sc in _scenarios(lib):
+        params = load_params(SYNTHETIC_CORE)
+        for sc in _scenarios(params):
             with self.subTest(scenario=sc["name"]):
-                e = Engine(lib, init=sc["init"], seed=sc["seed"], config=sc["config"])
+                e = Engine(params, init=sc["init"], seed=sc["seed"], config=sc["config"])
                 script_by_step: dict[int, list[dict]] = {}
                 for item in sc["script"]:
                     script_by_step.setdefault(item["step"], []).append(item["cmd"])
@@ -81,8 +81,8 @@ class TestEngineOracle(unittest.TestCase):
 class TestSnapshotJsonFormAndNonfinite(unittest.TestCase):
     def test_steady_state_snapshot_and_nonfinite(self):
         """Non-finite float in snapshot produces E_NONFINITE; json_form replaces with null and serializes."""
-        lib = Library(SYNTHETIC_CORE)
-        e = Engine(lib, {}, seed=1)
+        params = load_params(SYNTHETIC_CORE)
+        e = Engine(params, {}, seed=1)
         raw_snap = e.snapshot()
         raw_snap["truth"]["period"] = math.inf
 
@@ -162,8 +162,8 @@ class TestInvalidFixtures(unittest.TestCase):
 class TestFalsificationAndEdgeCases(unittest.TestCase):
     def test_scram_immediate_snapshot_and_motion(self):
         """Snapshot right after scram and during scram insertion validates with shape included."""
-        lib = Library(SYNTHETIC_CORE)
-        e = Engine(lib, {"rods": {"safety": 1.0}}, seed=42)
+        params = load_params(SYNTHETIC_CORE)
+        e = Engine(params, {"rods": {"safety": 1.0}}, seed=42)
         # Trigger scram
         e.submit({"type": "scram", "reason": "operator-drill"})
         # Step during scram
@@ -179,8 +179,8 @@ class TestFalsificationAndEdgeCases(unittest.TestCase):
 
     def test_nested_nonfinite_detected_at_exact_paths(self):
         """Non-finite floats nested in snapshot arrays or sub-objects are flagged with E_NONFINITE and correct path."""
-        lib = Library(SYNTHETIC_CORE)
-        e = Engine(lib, {}, seed=1)
+        params = load_params(SYNTHETIC_CORE)
+        e = Engine(params, {}, seed=1)
         base = json_form(e.snapshot())
 
         test_cases = [

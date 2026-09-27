@@ -6,7 +6,7 @@ import math
 import unittest
 from unittest.mock import patch
 
-from kirk import Engine, InitError
+from kirk import Engine, InitError, Model
 import kirk.engine as engine
 from kirk.engine import IP, IX
 from tests import test_engine
@@ -96,20 +96,22 @@ class TestROS3P(unittest.TestCase):
     def test_analytic_checks_with_ros3p(self):
         # 1. source equilibrium matches formula and holds
         L = lib()
+        M = Model(L)
         e = Engine(L, {}, config={"method": "ros3p"})
         rho = e.reactivity(0.0, e.y)["total"]
-        self.assertAlmostEqual(e.y[IP], -L.ext_source * L.gen_time / rho, delta=1e-15)
+        self.assertAlmostEqual(e.y[IP], -M.ext_source * M.gen_time / rho, delta=1e-15)
         p0 = e.y[IP]
         e.advance(20.0)
         self.assertLess(abs(e.y[IP] / p0 - 1.0), 1e-8)
 
         # 2. prompt jump
         L = kinetics_only_lib()
+        M = Model(L)
         e = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}}, config={"method": "ros3p"})
         rho = 0.001
         e.submit({"type": "fault.reactivity", "deltaRho": rho})
         e.advance(0.05)
-        expected = L.beta_total / (L.beta_total - rho)
+        expected = M.beta_total / (M.beta_total - rho)
         self.assertLess(abs(e.y[IP] / expected - 1.0), 3e-3)
 
         # 3. stable period matches inhour
@@ -126,13 +128,14 @@ class TestROS3P(unittest.TestCase):
 
         # 4. Nordheim-Fuchs peak check
         L, K = test_engine.TestKineticsAnalytic._pulse_lib(delayed_return=False)
+        M = Model(L)
         rho_p = 0.003
         e = Engine(L, {"power": {"mode": "critical-equilibrium", "value": 1.0}},
                    config={"method": "ros3p", "outerDt": 1e-3})
-        e.submit({"type": "fault.reactivity", "deltaRho": L.beta_total + rho_p})
+        e.submit({"type": "fault.reactivity", "deltaRho": M.beta_total + rho_p})
         while e.t < 0.6:
             e.step()
-        p_max = rho_p ** 2 / (2 * K * L.gen_time)
+        p_max = rho_p ** 2 / (2 * K * M.gen_time)
         self.assertLess(abs(e.peak_power / p_max - 1.0), 1e-3)
 
     def test_ros3p_takes_fewer_steps(self):
@@ -183,8 +186,8 @@ class TestROS3P(unittest.TestCase):
         1.4e-3; gamma2 = 0 1.2e-4; gamma3 = 0 2.7e-3; c32 x 1.01 5.3e-5; c21 x 1.01 2.5e-5; m2 = 0.583 5.8e-5.
         The 2e-6 threshold sits 8x above the correct error and 12x below the smallest wrong-coefficient error."""
         L = kinetics_only_lib()
-        L.calibration = -(L.ref_rho + L.rod_by_id["regulating"].worth(0.4))
-        L.mark_modified("time-dependent-accuracy")
+        M = Model(L)
+        L["reference"]["calibration"] = -(M.ref_rho + M.rod_by_id["regulating"].worth(0.4))
         e = Engine(L, {"rods": {"safety": 0.0, "regulating": 0.4, "transient": 0.0},
                        "power": {"mode": "critical-equilibrium", "value": 1.0}}, config={"method": "ros3p"})
         e.motions["regulating"] = {"kind": "move", "t0": 0.0, "x0": 0.4, "v": 0.5}
