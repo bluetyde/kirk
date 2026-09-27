@@ -1,0 +1,2408 @@
+{
+  "schemaVersion": "0.1.0",
+  "id": "triga-jsi",
+  "name": "JSI TRIGA Mark II (Ljubljana) Benchmark Core",
+  "status": "experimental",
+  "capabilities": [
+    "point-kinetics/lumped-thermal-v1"
+  ],
+  "provenance": {
+    "generator": "pipeline.library.build_triga",
+    "created": "2026-09-26",
+    "notes": "Experimental TRIGA-like model. Kinetics (betas, generation time), fuel cp(T), fuel alpha(T) and the pulse-rod ejection time are cited from Vavtar & Snoj 2021 (checked 2026-09-27, task C2); alpha(T) is read from a figure (+-0.5e-5/K). Everything else is 'assumed'. Geometry and power shapes are illustrative, not the benchmark core. See docs/reviews/2026-09-26-m1-go-review.md.",
+    "sources": [
+      {
+        "id": "keepin1965",
+        "cite": "G. R. Keepin, Physics of Nuclear Kinetics, Addison-Wesley (1965): U-235 thermal delayed-neutron groups"
+      },
+      {
+        "id": "icsbep",
+        "cite": "ICSBEP Benchmark IEU-COMP-THERM-003 (OECD-NEA, 2007)"
+      },
+      {
+        "id": "vavtar2021",
+        "cite": "I. Vavtar, L. Snoj, Evaluation of approximations in reactor pulse, EPJ Web of Conferences 247, 08006 (2021), doi:10.1051/epjconf/202124708006"
+      },
+      {
+        "id": "svajger2024",
+        "cite": "I. \u0160vajger, D. \u010cali\u010d, A. Punger\u010di\u010d, A. Trkov, L. Snoj, Evaluation of reactor pulse experiments, Nuclear Engineering and Technology 56 (2024) 1165\u20131203, doi:10.1016/j.net.2023.11.021 (not yet checked)"
+      }
+    ]
+  },
+  "reference": {
+    "rods": {
+      "transient": 0.0,
+      "safety": 0.0,
+      "shim": 0.0,
+      "regulating": 0.0
+    },
+    "Tfuel": {
+      "value": 293.15,
+      "source": "assumed"
+    },
+    "Tcoolant": {
+      "value": 293.15,
+      "source": "assumed"
+    },
+    "xenon": {
+      "value": 0.0,
+      "source": "assumed"
+    },
+    "rho": {
+      "value": -0.045,
+      "source": "assumed"
+    },
+    "calibration": null
+  },
+  "kinetics": {
+    "beta": {
+      "values": [
+        0.00023097,
+        0.00153278,
+        0.0013718,
+        0.00276451,
+        0.00080489,
+        0.00029396
+      ],
+      "source": "cited:vavtar2021"
+    },
+    "lambda": {
+      "values": [
+        0.0124,
+        0.0305,
+        0.111,
+        0.301,
+        1.14,
+        3.01
+      ],
+      "source": "cited:keepin1965"
+    },
+    "genTime": {
+      "value": 4e-05,
+      "source": "cited:vavtar2021"
+    },
+    "extSource": {
+      "value": 0.5,
+      "source": "assumed"
+    }
+  },
+  "reactivity": {
+    "rods": [
+      {
+        "id": "transient",
+        "name": "Transient (Pulse) rod",
+        "travelCm": 38.1,
+        "speed": 0.02,
+        "pulseCapable": true,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            9.9346503e-05,
+            0.000748973676,
+            0.002288973676,
+            0.004719346503,
+            0.0077,
+            0.010680653497,
+            0.013111026324,
+            0.014651026324,
+            0.015300653497,
+            0.0154
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "assumed"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.25,
+            0.35
+          ],
+          "x": [
+            1.0,
+            0.95,
+            0.65,
+            0.2,
+            0.0
+          ],
+          "source": "assumed"
+        },
+        "fireTime": 0.08
+      },
+      {
+        "id": "safety",
+        "name": "Safety rod",
+        "travelCm": 38.1,
+        "speed": 0.02,
+        "pulseCapable": false,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            0.000139988254,
+            0.001055371998,
+            0.003225371998,
+            0.006649988254,
+            0.01085,
+            0.015050011746,
+            0.018474628002,
+            0.020644628002,
+            0.021560011746,
+            0.0217
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "assumed"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.25,
+            0.35
+          ],
+          "x": [
+            1.0,
+            0.95,
+            0.65,
+            0.2,
+            0.0
+          ],
+          "source": "assumed"
+        }
+      },
+      {
+        "id": "shim",
+        "name": "Compensating (Shim) rod",
+        "travelCm": 38.1,
+        "speed": 0.02,
+        "pulseCapable": false,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            0.000126441004,
+            0.000953239224,
+            0.002913239224,
+            0.006006441004,
+            0.0098,
+            0.013593558996,
+            0.016686760776,
+            0.018646760776,
+            0.019473558996,
+            0.0196
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "assumed"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.25,
+            0.35
+          ],
+          "x": [
+            1.0,
+            0.95,
+            0.65,
+            0.2,
+            0.0
+          ],
+          "source": "assumed"
+        }
+      },
+      {
+        "id": "regulating",
+        "name": "Regulating rod",
+        "travelCm": 38.1,
+        "speed": 0.02,
+        "pulseCapable": false,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            3.8383876e-05,
+            0.000289376193,
+            0.000884376193,
+            0.001823383876,
+            0.002975,
+            0.004126616124,
+            0.005065623807,
+            0.005660623807,
+            0.005911616124,
+            0.00595
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "assumed"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.25,
+            0.35
+          ],
+          "x": [
+            1.0,
+            0.95,
+            0.65,
+            0.2,
+            0.0
+          ],
+          "source": "assumed"
+        }
+      }
+    ],
+    "fuelTemp": {
+      "T": [
+        293.15,
+        350.0,
+        400.0,
+        500.0,
+        600.0,
+        800.0,
+        1000.0,
+        1200.0
+      ],
+      "rho": [
+        0.0,
+        -0.003746894672,
+        -0.007396096112,
+        -0.015450177574,
+        -0.024186045198,
+        -0.041651889913,
+        -0.0583444888,
+        -0.074277315283
+      ],
+      "interp": "linear",
+      "outOfRange": "clamp-and-flag",
+      "source": "cited:vavtar2021"
+    },
+    "coolantTemp": {
+      "T": [
+        283.15,
+        293.15,
+        313.15,
+        333.15,
+        353.15
+      ],
+      "rho": [
+        0.00035,
+        -0.0,
+        -0.0007,
+        -0.0014,
+        -0.0021
+      ],
+      "interp": "linear",
+      "outOfRange": "clamp-and-flag",
+      "source": "assumed"
+    },
+    "xenon": {
+      "N": [
+        0.0,
+        1e+20,
+        2e+20,
+        4e+20
+      ],
+      "rho": [
+        0.0,
+        -0.0015,
+        -0.003,
+        -0.006
+      ],
+      "interp": "linear",
+      "outOfRange": "extrapolate-and-flag",
+      "source": "assumed"
+    }
+  },
+  "thermal": {
+    "fuel": {
+      "mass": {
+        "value": 84.0,
+        "source": "assumed"
+      },
+      "cp": {
+        "T": [
+          293.15,
+          350.0,
+          400.0,
+          500.0,
+          600.0,
+          800.0,
+          1000.0,
+          1200.0
+        ],
+        "c": [
+          345.882,
+          384.4263,
+          418.3263,
+          486.1263,
+          553.9263,
+          689.5263,
+          825.1263,
+          960.7263
+        ],
+        "interp": "linear",
+        "outOfRange": "clamp-and-flag",
+        "source": "cited:vavtar2021"
+      }
+    },
+    "coolant": {
+      "mass": {
+        "value": 20000.0,
+        "source": "assumed"
+      },
+      "cp": {
+        "value": 4184.0,
+        "source": "assumed"
+      }
+    },
+    "hA": {
+      "value": 3000.0,
+      "source": "assumed"
+    },
+    "heatExchanger": {
+      "UA": {
+        "value": 10000.0,
+        "source": "assumed"
+      },
+      "sinkTemp": {
+        "value": 293.15,
+        "source": "assumed"
+      },
+      "pump": "primary"
+    },
+    "deposition": {
+      "fuelFraction": {
+        "value": 1.0,
+        "source": "assumed"
+      }
+    }
+  },
+  "poisons": {
+    "fluxPerWatt": {
+      "value": 40000000000.0,
+      "source": "assumed"
+    },
+    "sigmaF": {
+      "value": 5.0,
+      "source": "assumed"
+    },
+    "gammaI": {
+      "value": 0.061,
+      "source": "assumed"
+    },
+    "gammaXe": {
+      "value": 0.003,
+      "source": "assumed"
+    },
+    "lambdaI": {
+      "value": 2.87e-05,
+      "source": "assumed"
+    },
+    "lambdaXe": {
+      "value": 2.09e-05,
+      "source": "assumed"
+    },
+    "sigmaXe": {
+      "value": 2.6e-22,
+      "source": "assumed"
+    }
+  },
+  "plant": {
+    "modes": [
+      "steady",
+      "pulse"
+    ],
+    "initialMode": "steady",
+    "pumps": [
+      {
+        "id": "primary"
+      }
+    ],
+    "instruments": [
+      {
+        "id": "linear",
+        "signal": "truth.power",
+        "scale": "linear",
+        "range": [
+          0.0,
+          300000.0
+        ],
+        "lag": 0.05,
+        "noise": 0.01
+      },
+      {
+        "id": "log",
+        "signal": "truth.power",
+        "scale": "log",
+        "range": [
+          0.0001,
+          1000000000.0
+        ],
+        "lag": 0.005,
+        "noise": 0.01
+      },
+      {
+        "id": "fuel-t1",
+        "signal": "truth.fuelTemp",
+        "scale": "linear",
+        "range": [
+          273.15,
+          1273.15
+        ],
+        "lag": 0.5,
+        "noise": 0.002
+      },
+      {
+        "id": "fuel-t2",
+        "signal": "truth.fuelTemp",
+        "scale": "linear",
+        "range": [
+          273.15,
+          1273.15
+        ],
+        "lag": 0.5,
+        "noise": 0.002
+      },
+      {
+        "id": "pool-temp",
+        "signal": "truth.coolantTemp",
+        "scale": "linear",
+        "range": [
+          273.15,
+          373.15
+        ],
+        "lag": 5.0,
+        "noise": 0.001
+      }
+    ],
+    "trips": [
+      {
+        "id": "power-high",
+        "input": "indicated.linear",
+        "predicate": {
+          "op": "gt",
+          "value": 275000.0
+        },
+        "modes": [
+          "steady"
+        ],
+        "latching": true
+      },
+      {
+        "id": "fuel-temp-high",
+        "input": "indicated.fuel-t1",
+        "predicate": {
+          "op": "gt",
+          "value": 873.15
+        },
+        "latching": true
+      },
+      {
+        "id": "period-short",
+        "input": "truth.period",
+        "predicate": {
+          "all": [
+            {
+              "op": "gt",
+              "value": 0.0
+            },
+            {
+              "op": "lt",
+              "value": 3.0
+            }
+          ]
+        },
+        "modes": [
+          "steady"
+        ],
+        "latching": true
+      }
+    ],
+    "interlocks": [
+      {
+        "id": "fire-needs-pulse-mode",
+        "when": {
+          "signal": "truth.mode",
+          "op": "ne",
+          "value": "pulse"
+        },
+        "blocks": [
+          "rod.fire"
+        ],
+        "reason": "The transient rod can only be fired in pulse mode."
+      },
+      {
+        "id": "pulse-mode-low-power",
+        "when": {
+          "all": [
+            {
+              "signal": "truth.mode",
+              "op": "eq",
+              "value": "steady"
+            },
+            {
+              "signal": "indicated.linear",
+              "op": "gt",
+              "value": 1000.0
+            }
+          ]
+        },
+        "blocks": [
+          "mode.set"
+        ],
+        "reason": "Switching to pulse mode requires steady power below 1 kW."
+      }
+    ]
+  },
+  "shapes": {
+    "bins": {
+      "elements": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "C10",
+        "C11",
+        "C12",
+        "C2",
+        "C3",
+        "C4",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "D1",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16",
+        "D17",
+        "D18",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D9",
+        "E1",
+        "E10",
+        "E11",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "E2",
+        "E20",
+        "E21",
+        "E22",
+        "E23",
+        "E24",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9"
+      ],
+      "axialEdgesCm": [
+        -19.05,
+        -15.24,
+        -11.43,
+        -7.62,
+        -3.81,
+        0.0,
+        3.81,
+        7.62,
+        11.43,
+        15.24,
+        19.05
+      ]
+    },
+    "basis": "heating",
+    "normalization": "fraction-of-total-power",
+    "form": "separable",
+    "base": "base",
+    "baseUnc": "baseUnc",
+    "volumes": "volumes",
+    "rodDeltas": {
+      "transient": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_transient"
+      },
+      "safety": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_safety"
+      },
+      "shim": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_shim"
+      },
+      "regulating": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_regulating"
+      }
+    },
+    "tempDelta": {
+      "T": [
+        293.15,
+        350.0,
+        400.0,
+        500.0,
+        600.0,
+        800.0,
+        1000.0,
+        1200.0
+      ],
+      "array": "tempDelta"
+    }
+  },
+  "arrays": {
+    "base": {
+      "file": "arrays/base.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 2240,
+      "sha256": "b5c36b25155f3a072e391d91eabdd8fd1bf124a8214630f6c909e8a198444967"
+    },
+    "baseUnc": {
+      "file": "arrays/base_unc.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 2240,
+      "sha256": "8190a1d075bc47bc87caa5c3cc48fcb608c5a5633b2f7846476b62defbe11a90"
+    },
+    "volumes": {
+      "file": "arrays/volumes.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 2240,
+      "sha256": "6376af62c58bb29375067bfbcc0c0bc58046830ca67f5060c06de11bd691cbb9"
+    },
+    "tempDelta": {
+      "file": "arrays/temp_delta.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        8,
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 17920,
+      "sha256": "11dd1d6fb786b3f33bb9198e2f934161a29dea5ffdae1e9895db5f870618aeb9"
+    },
+    "rod_transient": {
+      "file": "arrays/rod_transient.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 24640,
+      "sha256": "232320b103a50fb575ed6befc0ed3bac32d20b157d0ada12a7be01e1a5598bbe"
+    },
+    "rod_safety": {
+      "file": "arrays/rod_safety.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 24640,
+      "sha256": "48017d071daa31f41ac2774d3117d823ce34d381ce643b2196f0206f686c2a34"
+    },
+    "rod_shim": {
+      "file": "arrays/rod_shim.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 24640,
+      "sha256": "d638b47d45a36282cf1d4153d2ad40bb0e7f8410baa748d5a84e4f8d55eb6c10"
+    },
+    "rod_regulating": {
+      "file": "arrays/rod_regulating.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        56,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 24640,
+      "sha256": "936a305543762253c331e277131b4d939c7719d069a9c0c4e09c5eee6e90694c"
+    }
+  },
+  "geometry": {
+    "units": "cm",
+    "up": "z",
+    "primitives": [
+      {
+        "type": "cylinder",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 100.0,
+        "height": 625.0,
+        "material": "water"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "rInner": 22.0,
+        "radius": 55.0,
+        "height": 55.0,
+        "material": "graphite"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 1.9,
+        "height": 38.1,
+        "material": "aluminum"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B1"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B1"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.15,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B2"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.15,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B2"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.15,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.15,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.3,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.15,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B5"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.15,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B5"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.15,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "B6"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.15,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "B6"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -0.0,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C10"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -0.0,
+          -7.4478,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C10"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C11"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          -7.4478,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C11"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C12"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          6.45,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C12"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C2"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          6.45,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C2"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          7.4478,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          0.0,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          0.0,
+          7.4478,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C6"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -6.45,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C6"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -8.6,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C7"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -8.6,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C7"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C8"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -6.45,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C8"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "C9"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.3,
+          -7.4478,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "C9"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          12.9,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D1"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          12.9,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D1"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -12.9,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D10"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -12.9,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D10"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -12.122,
+          -4.4121,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D11"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -12.122,
+          -4.4121,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D11"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -9.882,
+          -8.292,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D12"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -9.882,
+          -8.292,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D12"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          -11.1717,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D13"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -6.45,
+          -11.1717,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D13"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.2401,
+          -12.704,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D14"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.2401,
+          -12.704,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D14"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.2401,
+          -12.704,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D15"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.2401,
+          -12.704,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D15"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          -11.1717,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D16"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          6.45,
+          -11.1717,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D16"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          9.882,
+          -8.292,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D17"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          9.882,
+          -8.292,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D17"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          12.122,
+          -4.4121,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D18"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          12.122,
+          -4.4121,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D18"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          12.122,
+          4.4121,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D2"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          12.122,
+          4.4121,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D2"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          9.882,
+          8.292,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          9.882,
+          8.292,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          11.1717,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          6.45,
+          11.1717,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.2401,
+          12.704,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D5"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.2401,
+          12.704,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D5"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.2401,
+          12.704,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D6"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.2401,
+          12.704,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D6"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          11.1717,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D7"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -6.45,
+          11.1717,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D7"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -12.122,
+          4.4121,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "D9"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -12.122,
+          4.4121,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "D9"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          17.2,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E1"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          17.2,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E1"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -12.1622,
+          12.1622,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E10"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -12.1622,
+          12.1622,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E10"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -14.8956,
+          8.6,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E11"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -14.8956,
+          8.6,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E11"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -17.2,
+          0.0,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E13"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -17.2,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E13"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -16.6139,
+          -4.4517,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E14"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -16.6139,
+          -4.4517,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E14"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -14.8956,
+          -8.6,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E15"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -14.8956,
+          -8.6,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E15"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -12.1622,
+          -12.1622,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E16"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -12.1622,
+          -12.1622,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E16"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -8.6,
+          -14.8956,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E17"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -8.6,
+          -14.8956,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E17"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.4517,
+          -16.6139,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E18"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.4517,
+          -16.6139,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E18"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -0.0,
+          -17.2,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E19"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -0.0,
+          -17.2,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E19"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          16.6139,
+          4.4517,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E2"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          16.6139,
+          4.4517,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E2"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.4517,
+          -16.6139,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E20"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.4517,
+          -16.6139,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E20"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          8.6,
+          -14.8956,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E21"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          8.6,
+          -14.8956,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E21"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          12.1622,
+          -12.1622,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E22"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          12.1622,
+          -12.1622,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E22"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          14.8956,
+          -8.6,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E23"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          14.8956,
+          -8.6,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E23"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          16.6139,
+          -4.4517,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E24"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          16.6139,
+          -4.4517,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E24"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          14.8956,
+          8.6,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          14.8956,
+          8.6,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          12.1622,
+          12.1622,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          12.1622,
+          12.1622,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          8.6,
+          14.8956,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E5"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          8.6,
+          14.8956,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E5"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.4517,
+          16.6139,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E6"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.4517,
+          16.6139,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E6"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          0.0,
+          17.2,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E7"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          0.0,
+          17.2,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E7"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.4517,
+          16.6139,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E8"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.4517,
+          16.6139,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E8"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -8.6,
+          14.8956,
+          0.0
+        ],
+        "radius": 1.815,
+        "height": 38.1,
+        "material": "fuel",
+        "element": "E9"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -8.6,
+          14.8956,
+          0.0
+        ],
+        "rInner": 1.815,
+        "radius": 1.866,
+        "height": 38.1,
+        "material": "steel",
+        "element": "E9"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          8.6,
+          0.0,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.1,
+        "material": "b4c",
+        "rod": "transient"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.1,
+        "material": "b4c",
+        "rod": "safety"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -9.882,
+          8.292,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.1,
+        "material": "b4c",
+        "rod": "shim"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -16.6139,
+          4.4517,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.1,
+        "material": "b4c",
+        "rod": "regulating"
+      }
+    ]
+  },
+  "domain": {
+    "rods": {
+      "transient": [
+        0.0,
+        1.0
+      ],
+      "safety": [
+        0.0,
+        1.0
+      ],
+      "shim": [
+        0.0,
+        1.0
+      ],
+      "regulating": [
+        0.0,
+        1.0
+      ]
+    },
+    "Tfuel": [
+      293.15,
+      1200.0
+    ],
+    "Tcoolant": [
+      283.15,
+      353.15
+    ],
+    "xenon": [
+      0.0,
+      4e+20
+    ],
+    "jointChecked": []
+  }
+}

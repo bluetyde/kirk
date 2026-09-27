@@ -1,0 +1,178 @@
+{
+ "$defs": {
+  "faultInstrument": {
+   "additionalProperties": false,
+   "properties": {
+    "instrument": {
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "stuck",
+      "dead",
+      "clear"
+     ]
+    },
+    "type": {
+     "const": "fault.instrument"
+    }
+   },
+   "required": [
+    "type",
+    "instrument",
+    "kind"
+   ],
+   "type": "object"
+  },
+  "faultReactivity": {
+   "additionalProperties": false,
+   "properties": {
+    "deltaRho": {
+     "type": "number"
+    },
+    "type": {
+     "const": "fault.reactivity"
+    }
+   },
+   "required": [
+    "type",
+    "deltaRho"
+   ],
+   "type": "object"
+  },
+  "modeSet": {
+   "additionalProperties": false,
+   "properties": {
+    "mode": {
+     "type": "string"
+    },
+    "type": {
+     "const": "mode.set"
+    }
+   },
+   "required": [
+    "type",
+    "mode"
+   ],
+   "type": "object"
+  },
+  "pumpSet": {
+   "additionalProperties": false,
+   "properties": {
+    "on": {
+     "type": "boolean"
+    },
+    "pump": {
+     "type": "string"
+    },
+    "type": {
+     "const": "pump.set"
+    }
+   },
+   "required": [
+    "type",
+    "pump",
+    "on"
+   ],
+   "type": "object"
+  },
+  "rodFire": {
+   "additionalProperties": false,
+   "properties": {
+    "rod": {
+     "type": "string"
+    },
+    "type": {
+     "const": "rod.fire"
+    }
+   },
+   "required": [
+    "type",
+    "rod"
+   ],
+   "type": "object"
+  },
+  "rodMove": {
+   "additionalProperties": false,
+   "properties": {
+    "direction": {
+     "enum": [
+      "in",
+      "out",
+      "stop"
+     ]
+    },
+    "rod": {
+     "type": "string"
+    },
+    "type": {
+     "const": "rod.move"
+    }
+   },
+   "required": [
+    "type",
+    "rod",
+    "direction"
+   ],
+   "type": "object"
+  },
+  "scram": {
+   "additionalProperties": false,
+   "properties": {
+    "reason": {
+     "type": "string"
+    },
+    "type": {
+     "const": "scram"
+    }
+   },
+   "required": [
+    "type"
+   ],
+   "type": "object"
+  },
+  "tripReset": {
+   "additionalProperties": false,
+   "properties": {
+    "type": {
+     "const": "trip.reset"
+    }
+   },
+   "required": [
+    "type"
+   ],
+   "type": "object"
+  }
+ },
+ "$id": "https://github.com/bluetyde/virtual-reactor/schema/command.schema.json",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "anyOf": [
+  {
+   "$ref": "#/$defs/rodMove"
+  },
+  {
+   "$ref": "#/$defs/rodFire"
+  },
+  {
+   "$ref": "#/$defs/modeSet"
+  },
+  {
+   "$ref": "#/$defs/pumpSet"
+  },
+  {
+   "$ref": "#/$defs/scram"
+  },
+  {
+   "$ref": "#/$defs/tripReset"
+  },
+  {
+   "$ref": "#/$defs/faultReactivity"
+  },
+  {
+   "$ref": "#/$defs/faultInstrument"
+  }
+ ],
+ "description": "Structure only. Keywords used are limited to the subset implemented by pipeline/library/minischema.py.",
+ "title": "Reactor engine command, v0.1.0",
+ "type": "object"
+}

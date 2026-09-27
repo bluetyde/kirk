@@ -1,0 +1,10 @@
+{
+ "document": {
+  "deltaRho": "0.1",
+  "type": "fault.reactivity"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'fault.reactivity' with string deltaRho instead of number"
+}

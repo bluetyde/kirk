@@ -1,0 +1,10 @@
+{
+ "document": {
+  "direction": "in",
+  "type": "rod.move"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'rod.move' missing required 'rod' field"
+}

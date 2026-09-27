@@ -1,0 +1,298 @@
+{
+ "config": {
+  "outerDt": 0.01
+ },
+ "description": "Command rejections from interlocks, rod capability, unknown targets, and instrument fault.",
+ "events": [
+  {
+   "clientId": "local",
+   "reason": "REJ_INTERLOCK:fire-needs-pulse-mode",
+   "seq": 1,
+   "status": "rejected",
+   "t": 0.0,
+   "type": "command"
+  },
+  {
+   "clientId": "local",
+   "reason": "REJ_NOT_PULSE_CAPABLE",
+   "seq": 2,
+   "status": "rejected",
+   "t": 0.0,
+   "type": "command"
+  },
+  {
+   "clientId": "local",
+   "reason": "REJ_UNKNOWN_ROD",
+   "seq": 3,
+   "status": "rejected",
+   "t": 0.0,
+   "type": "command"
+  },
+  {
+   "clientId": "local",
+   "reason": "REJ_UNKNOWN_COMMAND",
+   "seq": 4,
+   "status": "rejected",
+   "t": 0.0,
+   "type": "command"
+  },
+  {
+   "clientId": "local",
+   "reason": null,
+   "seq": 5,
+   "status": "accepted",
+   "t": 0.01,
+   "type": "command"
+  }
+ ],
+ "final": {
+  "peakPower": 0.0006153846153846154,
+  "peakTime": 0.0
+ },
+ "init": {},
+ "libraryId": "synthetic-core",
+ "name": "rejections",
+ "pins": {
+  "config": {
+   "eventTol": 1e-07,
+   "hInit": 1e-05,
+   "hMin": 1e-12,
+   "method": "ros2",
+   "outerDt": 0.01,
+   "rtol": 1e-06
+  },
+  "engineVersion": "0.1.0",
+  "libraryDigest": "0d325f78069f3c890a797752421ae2b62ba998d41aeb8c12f2a70142b8852f25"
+ },
+ "sampleEvery": 5,
+ "samples": [
+  {
+   "coolantTemp": 293.15,
+   "energy": 0.0,
+   "fuelTemp": 293.15,
+   "indicated": {
+    "fuel-tc": 293.2104422249733,
+    "linear": 0.0006152107707932563,
+    "log": 0.0006125794520262445,
+    "pool-temp": 293.001606275557
+   },
+   "iodine": 0.0,
+   "latched": [],
+   "mode": "steady",
+   "power": 0.0006153846153846154,
+   "precursors": [
+    0.2866004962779156,
+    0.773266078184111,
+    0.19015939015939012,
+    0.1413237924865832,
+    0.010863697705802972,
+    0.0015026833631484793
+   ],
+   "reactivityTotal": -0.0325,
+   "rods": {
+    "regulating": 0.0,
+    "safety": 0.0,
+    "transient": 0.0
+   },
+   "step": 0,
+   "t": 0.0,
+   "tripped": false,
+   "validityStatus": "unvalidated",
+   "xenon": 0.0
+  },
+  {
+   "coolantTemp": 293.15,
+   "energy": 3.076923076914842e-05,
+   "fuelTemp": 293.1500000023991,
+   "indicated": {
+    "fuel-tc": 293.3154379107182,
+    "linear": null,
+    "log": 0.0006037692711449649,
+    "pool-temp": 293.3875990473646
+   },
+   "iodine": 393230.48118827917,
+   "latched": [],
+   "mode": "steady",
+   "power": 0.0006153846153812551,
+   "precursors": [
+    0.2866004962779152,
+    0.7732660781841078,
+    0.19015939015938732,
+    0.14132379248657753,
+    0.010863697705801333,
+    0.0015026833631478955
+   ],
+   "reactivityTotal": -0.03250000000021977,
+   "rods": {
+    "regulating": 0.0,
+    "safety": 0.0,
+    "transient": 0.0
+   },
+   "step": 5,
+   "t": 0.05,
+   "tripped": false,
+   "validityStatus": "unvalidated",
+   "xenon": 14584.895805482567
+  },
+  {
+   "coolantTemp": 293.15,
+   "energy": 6.153846153812546e-05,
+   "fuelTemp": 293.1500000047889,
+   "indicated": {
+    "fuel-tc": 293.6251097136865,
+    "linear": null,
+    "log": 0.000627643847958558,
+    "pool-temp": 293.30528924635666
+   },
+   "iodine": 786460.3862921287,
+   "latched": [],
+   "mode": "steady",
+   "power": 0.0006153846153778273,
+   "precursors": [
+    0.2866004962779138,
+    0.773266078184098,
+    0.19015939015937866,
+    0.14132379248656018,
+    0.010863697705796434,
+    0.0015026833631462243
+   ],
+   "reactivityTotal": -0.032500000000438685,
+   "rods": {
+    "regulating": 0.0,
+    "safety": 0.0,
+    "transient": 0.0
+   },
+   "step": 10,
+   "t": 0.1,
+   "tripped": false,
+   "validityStatus": "unvalidated",
+   "xenon": 29170.352451618648
+  },
+  {
+   "coolantTemp": 293.15,
+   "energy": 9.230769230693117e-05,
+   "fuelTemp": 293.15000000716947,
+   "indicated": {
+    "fuel-tc": 293.48604644131365,
+    "linear": null,
+    "log": 0.0006123843807053508,
+    "pool-temp": 292.6458598741826
+   },
+   "iodine": 1179689.7153123994,
+   "latched": [],
+   "mode": "steady",
+   "power": 0.0006153846153744019,
+   "precursors": [
+    0.2866004962779113,
+    0.7732660781840818,
+    0.19015939015936414,
+    0.14132379248653135,
+    0.010863697705788457,
+    0.0015026833631436184
+   ],
+   "reactivityTotal": -0.03250000000065675,
+   "rods": {
+    "regulating": 0.0,
+    "safety": 0.0,
+    "transient": 0.0
+   },
+   "step": 15,
+   "t": 0.15,
+   "tripped": false,
+   "validityStatus": "unvalidated",
+   "xenon": 43756.36993696727
+  },
+  {
+   "coolantTemp": 293.15,
+   "energy": 0.00012307692307556568,
+   "fuelTemp": 293.1500000095407,
+   "indicated": {
+    "fuel-tc": 292.592706441961,
+    "linear": null,
+    "log": 0.0006169223158428133,
+    "pool-temp": 292.9999349816749
+   },
+   "iodine": 1572918.4682499375,
+   "latched": [],
+   "mode": "steady",
+   "power": 0.0006153846153709795,
+   "precursors": [
+    0.2866004962779078,
+    0.773266078184059,
+    0.1901593901593439,
+    0.14132379248649124,
+    0.010863697705777572,
+    0.001502683363140209
+   ],
+   "reactivityTotal": -0.032500000000873955,
+   "rods": {
+    "regulating": 0.0,
+    "safety": 0.0,
+    "transient": 0.0
+   },
+   "step": 20,
+   "t": 0.2,
+   "tripped": false,
+   "validityStatus": "unvalidated",
+   "xenon": 58342.94826009847
+  }
+ ],
+ "script": [
+  {
+   "cmd": {
+    "rod": "transient",
+    "type": "rod.fire"
+   },
+   "step": 0
+  },
+  {
+   "cmd": {
+    "rod": "safety",
+    "type": "rod.fire"
+   },
+   "step": 0
+  },
+  {
+   "cmd": {
+    "direction": "out",
+    "rod": "ghost",
+    "type": "rod.move"
+   },
+   "step": 0
+  },
+  {
+   "cmd": {
+    "type": "warp"
+   },
+   "step": 0
+  },
+  {
+   "cmd": {
+    "instrument": "linear",
+    "kind": "dead",
+    "type": "fault.instrument"
+   },
+   "step": 1
+  }
+ ],
+ "seed": 1,
+ "steps": 20,
+ "tolerances": {
+  "eventTime": {
+   "abs": 1e-09
+  },
+  "poisons": {
+   "abs": 1.0,
+   "rel": 1e-09
+  },
+  "power": {
+   "abs": 1e-15,
+   "rel": 1e-09
+  },
+  "temperature": {
+   "abs": 1e-09,
+   "rel": 1e-09
+  }
+ },
+ "vectorFormat": 1
+}

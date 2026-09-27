@@ -1,0 +1,81 @@
+{
+ "document": {
+  "diagnostics": {
+   "events": 0,
+   "h": 0.040000000000000036,
+   "rejected": 0,
+   "rhsCalls": 408,
+   "steps": 15
+  },
+  "indicated": {
+   "fuel-tc": 293.6251097136865,
+   "linear": 0.0006164284517656349,
+   "log": 0.000627643847958558,
+   "pool-temp": 293.30528924635666
+  },
+  "t": 0.1,
+  "tripped": false,
+  "trips": {
+   "active": [],
+   "latched": []
+  },
+  "truth": {
+   "coolantTemp": 293.15,
+   "energy": 6.153846153812546e-05,
+   "fuelTemp": 293.1500000047889,
+   "heatRemoved": -8.7633324555658e-14,
+   "iodine": 786460.3862921287,
+   "mode": "steady",
+   "peakPower": 0.0006153846153846154,
+   "peakTime": 0.0,
+   "period": -8976797366.684935,
+   "power": 0.0006153846153778273,
+   "precursors": [
+    0.2866004962779138,
+    0.773266078184098,
+    0.19015939015937866,
+    0.14132379248656018,
+    0.010863697705796434,
+    0.0015026833631462243
+   ],
+   "pumps": {
+    "primary": true
+   },
+   "reactivity": {
+    "calibration": 0.0,
+    "coolant": -0.0,
+    "fault": 0.0,
+    "fuel": -4.386804722795565e-13,
+    "reference": -0.0325,
+    "rods": 0.0,
+    "total": -0.032500000000438685,
+    "xenon": -4.375552867742797e-19
+   },
+   "rods": {
+    "regulating": {
+     "moving": null,
+     "position": 0.0
+    },
+    "safety": {
+     "moving": null,
+     "position": 1.5
+    },
+    "transient": {
+     "moving": null,
+     "position": 0.0
+    }
+   },
+   "xenon": 29170.352451618648
+  },
+  "validity": {
+   "reasons": [
+    "R_LIBRARY_SYNTHETIC"
+   ],
+   "status": "unvalidated"
+  }
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Snapshot with rod safety position set to 1.5 (> 1.0)"
+}

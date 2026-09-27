@@ -1,0 +1,11 @@
+{
+ "document": {
+  "instrument": "linear",
+  "kind": "drift",
+  "type": "fault.instrument"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'fault.instrument' with invalid kind 'drift'"
+}

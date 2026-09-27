@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.f32 binary
+*.bin binary
+*.png binary
+*.glb binary
+*.cmd text eol=crlf

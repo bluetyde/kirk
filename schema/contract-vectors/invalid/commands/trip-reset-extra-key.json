@@ -1,0 +1,10 @@
+{
+ "document": {
+  "extra": true,
+  "type": "trip.reset"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'trip.reset' with unexpected extra key"
+}

@@ -1,0 +1,9 @@
+{
+ "document": {
+  "type": "warp"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Unknown command type 'warp'"
+}

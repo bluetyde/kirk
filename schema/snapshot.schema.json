@@ -1,0 +1,271 @@
+{
+ "$id": "https://github.com/bluetyde/virtual-reactor/schema/snapshot.schema.json",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "additionalProperties": false,
+ "description": "Structure only. Keywords used are limited to the subset implemented by pipeline/library/minischema.py.",
+ "properties": {
+  "diagnostics": {
+   "additionalProperties": false,
+   "properties": {
+    "events": {
+     "minimum": 0,
+     "type": "integer"
+    },
+    "h": {
+     "exclusiveMinimum": 0,
+     "type": "number"
+    },
+    "rejected": {
+     "minimum": 0,
+     "type": "integer"
+    },
+    "rhsCalls": {
+     "minimum": 0,
+     "type": "integer"
+    },
+    "steps": {
+     "minimum": 0,
+     "type": "integer"
+    }
+   },
+   "required": [
+    "steps",
+    "rejected",
+    "rhsCalls",
+    "events",
+    "h"
+   ],
+   "type": "object"
+  },
+  "indicated": {
+   "additionalProperties": {
+    "anyOf": [
+     {
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "type": "object"
+  },
+  "t": {
+   "type": "number"
+  },
+  "tripped": {
+   "type": "boolean"
+  },
+  "trips": {
+   "additionalProperties": false,
+   "properties": {
+    "active": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "latched": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "required": [
+    "latched",
+    "active"
+   ],
+   "type": "object"
+  },
+  "truth": {
+   "additionalProperties": false,
+   "properties": {
+    "coolantTemp": {
+     "type": "number"
+    },
+    "energy": {
+     "type": "number"
+    },
+    "fuelTemp": {
+     "type": "number"
+    },
+    "heatRemoved": {
+     "type": "number"
+    },
+    "iodine": {
+     "type": "number"
+    },
+    "mode": {
+     "type": "string"
+    },
+    "peakPower": {
+     "type": "number"
+    },
+    "peakTime": {
+     "type": "number"
+    },
+    "period": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "power": {
+     "type": "number"
+    },
+    "precursors": {
+     "items": {
+      "type": "number"
+     },
+     "maxItems": 6,
+     "minItems": 6,
+     "type": "array"
+    },
+    "pumps": {
+     "additionalProperties": {
+      "type": "boolean"
+     },
+     "type": "object"
+    },
+    "reactivity": {
+     "additionalProperties": false,
+     "properties": {
+      "calibration": {
+       "type": "number"
+      },
+      "coolant": {
+       "type": "number"
+      },
+      "fault": {
+       "type": "number"
+      },
+      "fuel": {
+       "type": "number"
+      },
+      "reference": {
+       "type": "number"
+      },
+      "rods": {
+       "type": "number"
+      },
+      "total": {
+       "type": "number"
+      },
+      "xenon": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "total",
+      "reference",
+      "calibration",
+      "fault",
+      "rods",
+      "fuel",
+      "coolant",
+      "xenon"
+     ],
+     "type": "object"
+    },
+    "rods": {
+     "additionalProperties": {
+      "additionalProperties": false,
+      "properties": {
+       "moving": {
+        "anyOf": [
+         {
+          "enum": [
+           "in",
+           "out"
+          ]
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "position": {
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+       }
+      },
+      "required": [
+       "position",
+       "moving"
+      ],
+      "type": "object"
+     },
+     "type": "object"
+    },
+    "shape": {
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "xenon": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "power",
+    "precursors",
+    "reactivity",
+    "period",
+    "fuelTemp",
+    "coolantTemp",
+    "iodine",
+    "xenon",
+    "energy",
+    "heatRemoved",
+    "peakPower",
+    "peakTime",
+    "rods",
+    "mode",
+    "pumps"
+   ],
+   "type": "object"
+  },
+  "validity": {
+   "additionalProperties": false,
+   "properties": {
+    "reasons": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "status": {
+     "enum": [
+      "supported",
+      "unvalidated",
+      "outOfDomain"
+     ]
+    }
+   },
+   "required": [
+    "status",
+    "reasons"
+   ],
+   "type": "object"
+  }
+ },
+ "required": [
+  "t",
+  "truth",
+  "indicated",
+  "trips",
+  "tripped",
+  "validity",
+  "diagnostics"
+ ],
+ "title": "Reactor engine snapshot, v0.1.0",
+ "type": "object"
+}

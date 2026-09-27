@@ -1,0 +1,1204 @@
+{
+  "schemaVersion": "0.1.0",
+  "id": "synthetic-core",
+  "name": "Synthetic TRIGA-like core (test fixture, not a real reactor)",
+  "status": "synthetic",
+  "capabilities": [
+    "point-kinetics/lumped-thermal-v1"
+  ],
+  "provenance": {
+    "generator": "kirk.libformat.synthetic",
+    "created": "2026-09-25",
+    "notes": "All values invented for tests, except the delayed-group structure (standard U-235 thermal data).",
+    "sources": []
+  },
+  "reference": {
+    "rods": {
+      "safety": 0.0,
+      "regulating": 0.0,
+      "transient": 0.0
+    },
+    "Tfuel": {
+      "value": 293.15,
+      "source": "synthetic"
+    },
+    "Tcoolant": {
+      "value": 293.15,
+      "source": "synthetic"
+    },
+    "xenon": {
+      "value": 0.0,
+      "source": "synthetic"
+    },
+    "rho": {
+      "value": -0.0325,
+      "source": "synthetic"
+    },
+    "calibration": null
+  },
+  "kinetics": {
+    "beta": {
+      "values": [
+        0.000231,
+        0.001533,
+        0.001372,
+        0.002765,
+        0.000805,
+        0.000294
+      ],
+      "source": "synthetic"
+    },
+    "lambda": {
+      "values": [
+        0.0124,
+        0.0305,
+        0.111,
+        0.301,
+        1.14,
+        3.01
+      ],
+      "source": "synthetic"
+    },
+    "genTime": {
+      "value": 4e-05,
+      "source": "synthetic"
+    },
+    "extSource": {
+      "value": 0.5,
+      "source": "synthetic"
+    }
+  },
+  "reactivity": {
+    "rods": [
+      {
+        "id": "safety",
+        "name": "Safety rod",
+        "travelCm": 38.0,
+        "speed": 0.02,
+        "pulseCapable": false,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            0.000135472504,
+            0.00102132774,
+            0.00312132774,
+            0.006435472504,
+            0.0105,
+            0.014564527496,
+            0.01787867226,
+            0.01997867226,
+            0.020864527496,
+            0.021
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "synthetic"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.3,
+            0.45,
+            0.6
+          ],
+          "x": [
+            1.0,
+            0.98,
+            0.85,
+            0.55,
+            0.2,
+            0.0
+          ],
+          "source": "synthetic"
+        }
+      },
+      {
+        "id": "regulating",
+        "name": "Regulating rod",
+        "travelCm": 38.0,
+        "speed": 0.02,
+        "pulseCapable": false,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            9.0315003e-05,
+            0.00068088516,
+            0.00208088516,
+            0.004290315003,
+            0.007,
+            0.009709684997,
+            0.01191911484,
+            0.01331911484,
+            0.013909684997,
+            0.014
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "synthetic"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.3,
+            0.45,
+            0.6
+          ],
+          "x": [
+            1.0,
+            0.98,
+            0.85,
+            0.55,
+            0.2,
+            0.0
+          ],
+          "source": "synthetic"
+        }
+      },
+      {
+        "id": "transient",
+        "name": "Transient rod",
+        "travelCm": 38.0,
+        "speed": 0.02,
+        "pulseCapable": true,
+        "worth": {
+          "x": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "rho": [
+            0.0,
+            0.000112893753,
+            0.00085110645,
+            0.00260110645,
+            0.005362893753,
+            0.00875,
+            0.012137106247,
+            0.01489889355,
+            0.01664889355,
+            0.017387106247,
+            0.0175
+          ],
+          "interp": "linear",
+          "outOfRange": "clamp-and-flag",
+          "source": "synthetic"
+        },
+        "scram": {
+          "t": [
+            0.0,
+            0.05,
+            0.15,
+            0.3,
+            0.45,
+            0.6
+          ],
+          "x": [
+            1.0,
+            0.98,
+            0.85,
+            0.55,
+            0.2,
+            0.0
+          ],
+          "source": "synthetic"
+        },
+        "fireTime": 0.08
+      }
+    ],
+    "fuelTemp": {
+      "T": [
+        293.15,
+        400.0,
+        600.0,
+        800.0,
+        1000.0,
+        1200.0
+      ],
+      "rho": [
+        -0.0,
+        -0.009787753838,
+        -0.029028853838,
+        -0.049469953838,
+        -0.071111053838,
+        -0.093952153838
+      ],
+      "interp": "linear",
+      "outOfRange": "clamp-and-flag",
+      "source": "synthetic"
+    },
+    "coolantTemp": {
+      "T": [
+        283.15,
+        293.15,
+        313.15,
+        333.15,
+        353.15
+      ],
+      "rho": [
+        0.0002,
+        -0.0,
+        -0.0004,
+        -0.0008,
+        -0.0012
+      ],
+      "interp": "linear",
+      "outOfRange": "clamp-and-flag",
+      "source": "synthetic"
+    },
+    "xenon": {
+      "N": [
+        0.0,
+        1e+20,
+        2e+20,
+        4e+20
+      ],
+      "rho": [
+        0.0,
+        -0.0015,
+        -0.003,
+        -0.006
+      ],
+      "interp": "linear",
+      "outOfRange": "extrapolate-and-flag",
+      "source": "synthetic"
+    }
+  },
+  "thermal": {
+    "fuel": {
+      "mass": {
+        "value": 40.0,
+        "source": "synthetic"
+      },
+      "cp": {
+        "T": [
+          293.15,
+          600.0,
+          900.0,
+          1200.0
+        ],
+        "c": [
+          320.0,
+          420.0,
+          500.0,
+          560.0
+        ],
+        "interp": "linear",
+        "outOfRange": "clamp-and-flag",
+        "source": "synthetic"
+      }
+    },
+    "coolant": {
+      "mass": {
+        "value": 20000.0,
+        "source": "synthetic"
+      },
+      "cp": {
+        "value": 4180.0,
+        "source": "synthetic"
+      }
+    },
+    "hA": {
+      "value": 1000.0,
+      "source": "synthetic"
+    },
+    "heatExchanger": {
+      "UA": {
+        "value": 8000.0,
+        "source": "synthetic"
+      },
+      "sinkTemp": {
+        "value": 293.15,
+        "source": "synthetic"
+      },
+      "pump": "primary"
+    },
+    "deposition": {
+      "fuelFraction": {
+        "value": 1.0,
+        "source": "synthetic"
+      }
+    }
+  },
+  "poisons": {
+    "fluxPerWatt": {
+      "value": 40000000000.0,
+      "source": "synthetic"
+    },
+    "sigmaF": {
+      "value": 5.0,
+      "source": "synthetic"
+    },
+    "gammaI": {
+      "value": 0.0639,
+      "source": "synthetic"
+    },
+    "gammaXe": {
+      "value": 0.00237,
+      "source": "synthetic"
+    },
+    "lambdaI": {
+      "value": 2.93e-05,
+      "source": "synthetic"
+    },
+    "lambdaXe": {
+      "value": 2.09e-05,
+      "source": "synthetic"
+    },
+    "sigmaXe": {
+      "value": 2.6e-22,
+      "source": "synthetic"
+    }
+  },
+  "plant": {
+    "modes": [
+      "steady",
+      "pulse"
+    ],
+    "initialMode": "steady",
+    "pumps": [
+      {
+        "id": "primary"
+      }
+    ],
+    "instruments": [
+      {
+        "id": "linear",
+        "signal": "truth.power",
+        "scale": "linear",
+        "range": [
+          0.0,
+          300000.0
+        ],
+        "lag": 0.1,
+        "noise": 0.01
+      },
+      {
+        "id": "log",
+        "signal": "truth.power",
+        "scale": "log",
+        "range": [
+          0.0001,
+          3000000000.0
+        ],
+        "lag": 0.005,
+        "noise": 0.02
+      },
+      {
+        "id": "fuel-tc",
+        "signal": "truth.fuelTemp",
+        "scale": "linear",
+        "range": [
+          273.15,
+          1273.15
+        ],
+        "lag": 1.0,
+        "noise": 0.002
+      },
+      {
+        "id": "pool-temp",
+        "signal": "truth.coolantTemp",
+        "scale": "linear",
+        "range": [
+          273.15,
+          373.15
+        ],
+        "lag": 5.0,
+        "noise": 0.001
+      }
+    ],
+    "trips": [
+      {
+        "id": "power-high",
+        "input": "indicated.linear",
+        "predicate": {
+          "op": "gt",
+          "value": 275000.0
+        },
+        "modes": [
+          "steady"
+        ],
+        "latching": true
+      },
+      {
+        "id": "fuel-temp-high",
+        "input": "indicated.fuel-tc",
+        "predicate": {
+          "op": "gt",
+          "value": 873.15
+        },
+        "latching": true
+      },
+      {
+        "id": "period-short",
+        "input": "truth.period",
+        "predicate": {
+          "all": [
+            {
+              "op": "gt",
+              "value": 0.0
+            },
+            {
+              "op": "lt",
+              "value": 3.0
+            }
+          ]
+        },
+        "modes": [
+          "steady"
+        ],
+        "latching": true
+      }
+    ],
+    "interlocks": [
+      {
+        "id": "fire-needs-pulse-mode",
+        "when": {
+          "signal": "truth.mode",
+          "op": "ne",
+          "value": "pulse"
+        },
+        "blocks": [
+          "rod.fire"
+        ],
+        "reason": "The transient rod can only be fired in pulse mode."
+      },
+      {
+        "id": "pulse-mode-low-power",
+        "when": {
+          "all": [
+            {
+              "signal": "truth.mode",
+              "op": "eq",
+              "value": "steady"
+            },
+            {
+              "signal": "indicated.linear",
+              "op": "gt",
+              "value": 1000.0
+            }
+          ]
+        },
+        "blocks": [
+          "mode.set"
+        ],
+        "reason": "Switching to pulse mode needs power below 1 kW."
+      }
+    ]
+  },
+  "shapes": {
+    "bins": {
+      "elements": [
+        "B1",
+        "B1",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "C1",
+        "C3",
+        "C4",
+        "C5",
+        "C7",
+        "C8",
+        "C9",
+        "C11",
+        "C12"
+      ],
+      "axialEdgesCm": [
+        -19.0,
+        -15.0,
+        -11.0,
+        -7.0,
+        -3.5,
+        0.0,
+        3.5,
+        7.0,
+        11.0,
+        15.0,
+        19.0
+      ]
+    },
+    "basis": "heating",
+    "normalization": "fraction-of-total-power",
+    "form": "separable",
+    "base": "base",
+    "baseUnc": "baseUnc",
+    "volumes": "volumes",
+    "rodDeltas": {
+      "safety": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_safety"
+      },
+      "regulating": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_regulating"
+      },
+      "transient": {
+        "x": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          1.0
+        ],
+        "array": "rod_transient"
+      }
+    },
+    "tempDelta": {
+      "T": [
+        293.15,
+        400.0,
+        600.0,
+        800.0,
+        1000.0,
+        1200.0
+      ],
+      "array": "tempDelta"
+    }
+  },
+  "arrays": {
+    "base": {
+      "file": "arrays/base.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 600,
+      "sha256": "d2108949dd5d4f66f67c3127fe41447b2db20c96789c0a088ba353f9a4e9cd09"
+    },
+    "baseUnc": {
+      "file": "arrays/base_unc.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 600,
+      "sha256": "6154bd9ebb8d3ab10021ff9f19c939b5befeb2c4bc001400ebf769f92a4ed6fb"
+    },
+    "volumes": {
+      "file": "arrays/volumes.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 600,
+      "sha256": "bcb6511b7c7a0eb160d6f8b74b68318445e38b734cc32b698448f3fcd34f250d"
+    },
+    "tempDelta": {
+      "file": "arrays/temp_delta.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        6,
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 3600,
+      "sha256": "229d0b4c9a5207b7e078bee909bf1480d60f452d3352e0f0e0b03c8a2732263f"
+    },
+    "rod_safety": {
+      "file": "arrays/rod_safety.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 6600,
+      "sha256": "afba4a0235ebeab84a21e477674b19f94e9a7e9762b5db7614c53b36d35ee7db"
+    },
+    "rod_regulating": {
+      "file": "arrays/rod_regulating.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 6600,
+      "sha256": "70172993110155ac4b2031cea263ae31cefe771d96e2763ebe0e540150d35f32"
+    },
+    "rod_transient": {
+      "file": "arrays/rod_transient.f32",
+      "dtype": "float32",
+      "byteOrder": "little",
+      "shape": [
+        11,
+        15,
+        10
+      ],
+      "order": "C",
+      "offset": 0,
+      "byteLength": 6600,
+      "sha256": "1121f110bf06f41646be9e55f153b31be80615e74af9bd072052d4779c7d5dd9"
+    }
+  },
+  "geometry": {
+    "units": "cm",
+    "up": "z",
+    "primitives": [
+      {
+        "type": "cylinder",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 100.0,
+        "height": 640.0,
+        "material": "water"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "rInner": 12.0,
+        "radius": 30.0,
+        "height": 55.0,
+        "material": "graphite"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "radius": 1.9,
+        "height": 60.0,
+        "material": "aluminum"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          0.0,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B1"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B1"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.15,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B2"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.15,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B2"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.15,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.15,
+          3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          0.0,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.3,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -2.15,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B5"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -2.15,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B5"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          2.15,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "B6"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          2.15,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "B6"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          8.6,
+          0.0,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C1"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          8.6,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C1"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C3"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          7.4478,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C3"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          0.0,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C4"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          0.0,
+          7.4478,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C4"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          7.4478,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C5"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.3,
+          7.4478,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C5"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -8.6,
+          0.0,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C7"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -8.6,
+          0.0,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C7"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C8"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -6.45,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C8"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -4.3,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C9"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          -4.3,
+          -7.4478,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C9"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          4.3,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C11"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          4.3,
+          -7.4478,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C11"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          -3.7239,
+          0.0
+        ],
+        "radius": 1.82,
+        "height": 38.0,
+        "material": "fuel",
+        "element": "C12"
+      },
+      {
+        "type": "annulus",
+        "center": [
+          6.45,
+          -3.7239,
+          0.0
+        ],
+        "rInner": 1.82,
+        "radius": 1.87,
+        "height": 38.0,
+        "material": "steel",
+        "element": "C12"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          6.45,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.0,
+        "material": "b4c",
+        "rod": "safety"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -6.45,
+          3.7239,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.0,
+        "material": "b4c",
+        "rod": "regulating"
+      },
+      {
+        "type": "cylinder",
+        "center": [
+          -0.0,
+          -7.4478,
+          0.0
+        ],
+        "radius": 1.6,
+        "height": 38.0,
+        "material": "b4c",
+        "rod": "transient"
+      }
+    ]
+  },
+  "domain": {
+    "rods": {
+      "safety": [
+        0.0,
+        1.0
+      ],
+      "regulating": [
+        0.0,
+        1.0
+      ],
+      "transient": [
+        0.0,
+        1.0
+      ]
+    },
+    "Tfuel": [
+      293.15,
+      1200.0
+    ],
+    "Tcoolant": [
+      283.15,
+      353.15
+    ],
+    "xenon": [
+      0.0,
+      4e+20
+    ],
+    "jointChecked": []
+  }
+}

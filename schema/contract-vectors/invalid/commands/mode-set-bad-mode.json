@@ -1,0 +1,10 @@
+{
+ "document": {
+  "mode": 5,
+  "type": "mode.set"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'mode.set' with integer mode instead of string"
+}

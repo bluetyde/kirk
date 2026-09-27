@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bluetyde/virtual-reactor/schema/library.schema.json",
+  "title": "Reactor library manifest, v0.1.0",
+  "description": "Structure only. Meaning and semantic checks: docs/library-format.md. Keywords used are limited to the subset implemented by pipeline/library/minischema.py.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "name", "status", "capabilities", "provenance", "reference", "kinetics", "reactivity", "thermal", "poisons", "plant", "shapes", "arrays", "geometry", "domain"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["synthetic", "experimental", "validated-for-domain"] },
+    "capabilities": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "provenance": {
+      "type": "object",
+      "required": ["generator", "created", "sources"],
+      "additionalProperties": false,
+      "properties": {
+        "generator": { "type": "string" },
+        "transportCode": { "type": "string" },
+        "nuclearData": { "type": "string" },
+        "model": { "type": "string" },
+        "created": { "type": "string" },
+        "notes": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "cite"], "additionalProperties": false,
+            "properties": { "id": { "type": "string" }, "cite": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "required": ["rods", "Tfuel", "Tcoolant", "xenon", "rho", "calibration"],
+      "additionalProperties": false,
+      "properties": {
+        "rods": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 } },
+        "Tfuel": { "$ref": "#/$defs/scalarPositive" },
+        "Tcoolant": { "$ref": "#/$defs/scalarPositive" },
+        "xenon": { "$ref": "#/$defs/scalarNonNegative" },
+        "rho": { "$ref": "#/$defs/scalar" },
+        "calibration": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "object", "required": ["deltaRho", "reason"], "additionalProperties": false,
+              "properties": { "deltaRho": { "type": "number" }, "reason": { "type": "string", "minLength": 1 } } }
+          ]
+        }
+      }
+    },
+    "kinetics": {
+      "type": "object",
+      "required": ["beta", "lambda", "genTime", "extSource"],
+      "additionalProperties": false,
+      "properties": {
+        "beta": {
+          "type": "object", "required": ["values", "source"], "additionalProperties": false,
+          "properties": {
+            "values": { "$ref": "#/$defs/six" },
+            "unc": { "$ref": "#/$defs/six" },
+            "source": { "$ref": "#/$defs/source" }
+          }
+        },
+        "lambda": {
+          "type": "object", "required": ["values", "source"], "additionalProperties": false,
+          "properties": {
+            "values": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "number", "exclusiveMinimum": 0 } },
+            "source": { "$ref": "#/$defs/source" }
+          }
+        },
+        "genTime": { "$ref": "#/$defs/scalarPositive" },
+        "extSource": { "$ref": "#/$defs/scalarNonNegative" }
+      }
+    },
+    "reactivity": {
+      "type": "object",
+      "required": ["rods", "fuelTemp", "coolantTemp", "xenon"],
+      "additionalProperties": false,
+      "properties": {
+        "rods": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rod" } },
+        "fuelTemp": { "$ref": "#/$defs/tableT" },
+        "coolantTemp": { "$ref": "#/$defs/tableT" },
+        "xenon": { "$ref": "#/$defs/tableN" }
+      }
+    },
+    "thermal": {
+      "type": "object",
+      "required": ["fuel", "coolant", "hA", "heatExchanger", "deposition"],
+      "additionalProperties": false,
+      "properties": {
+        "fuel": {
+          "type": "object", "required": ["mass", "cp"], "additionalProperties": false,
+          "properties": {
+            "mass": { "$ref": "#/$defs/scalarPositive" },
+            "cp": {
+              "type": "object", "required": ["T", "c", "interp", "outOfRange", "source"], "additionalProperties": false,
+              "properties": {
+                "T": { "$ref": "#/$defs/numbers" },
+                "c": { "type": "array", "minItems": 2, "items": { "type": "number", "exclusiveMinimum": 0 } },
+                "interp": { "$ref": "#/$defs/interp" },
+                "outOfRange": { "$ref": "#/$defs/outOfRange" },
+                "source": { "$ref": "#/$defs/source" }
+              }
+            }
+          }
+        },
+        "coolant": {
+          "type": "object", "required": ["mass", "cp"], "additionalProperties": false,
+          "properties": { "mass": { "$ref": "#/$defs/scalarPositive" }, "cp": { "$ref": "#/$defs/scalarPositive" } }
+        },
+        "hA": { "$ref": "#/$defs/scalarPositive" },
+        "heatExchanger": {
+          "type": "object", "required": ["UA", "sinkTemp", "pump"], "additionalProperties": false,
+          "properties": {
+            "UA": { "$ref": "#/$defs/scalarNonNegative" },
+            "sinkTemp": { "$ref": "#/$defs/scalarPositive" },
+            "pump": { "type": "string" }
+          }
+        },
+        "deposition": {
+          "type": "object", "required": ["fuelFraction"], "additionalProperties": false,
+          "properties": { "fuelFraction": { "$ref": "#/$defs/scalarFraction" } }
+        }
+      }
+    },
+    "poisons": {
+      "type": "object",
+      "required": ["fluxPerWatt", "sigmaF", "gammaI", "gammaXe", "lambdaI", "lambdaXe", "sigmaXe"],
+      "additionalProperties": false,
+      "properties": {
+        "fluxPerWatt": { "$ref": "#/$defs/scalarPositive" },
+        "sigmaF": { "$ref": "#/$defs/scalarPositive" },
+        "gammaI": { "$ref": "#/$defs/scalarFraction" },
+        "gammaXe": { "$ref": "#/$defs/scalarFraction" },
+        "lambdaI": { "$ref": "#/$defs/scalarPositive" },
+        "lambdaXe": { "$ref": "#/$defs/scalarPositive" },
+        "sigmaXe": { "$ref": "#/$defs/scalarPositive" }
+      }
+    },
+    "plant": {
+      "type": "object",
+      "required": ["modes", "initialMode", "pumps", "instruments", "trips", "interlocks"],
+      "additionalProperties": false,
+      "properties": {
+        "modes": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "initialMode": { "type": "string" },
+        "pumps": {
+          "type": "array",
+          "items": { "type": "object", "required": ["id"], "additionalProperties": false, "properties": { "id": { "type": "string" } } }
+        },
+        "instruments": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "signal", "scale", "range", "lag", "noise"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "signal": { "type": "string" },
+              "scale": { "enum": ["linear", "log"] },
+              "range": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+              "lag": { "type": "number", "minimum": 0 },
+              "noise": { "type": "number", "minimum": 0 }
+            }
+          }
+        },
+        "trips": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "input", "predicate", "latching"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "input": { "type": "string" },
+              "predicate": { "$ref": "#/$defs/predicate" },
+              "modes": { "type": "array", "items": { "type": "string" } },
+              "latching": { "type": "boolean" }
+            }
+          }
+        },
+        "interlocks": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "when", "blocks", "reason"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "when": { "$ref": "#/$defs/predicate" },
+              "blocks": { "type": "array", "minItems": 1, "items": { "enum": ["rod.move", "rod.setTarget", "rod.fire", "mode.set", "pump.set"] } },
+              "reason": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "shapes": {
+      "type": "object",
+      "required": ["bins", "basis", "normalization", "form", "base", "volumes", "rodDeltas", "tempDelta"],
+      "additionalProperties": false,
+      "properties": {
+        "bins": {
+          "type": "object", "required": ["elements", "axialEdgesCm"], "additionalProperties": false,
+          "properties": {
+            "elements": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "axialEdgesCm": { "$ref": "#/$defs/numbers" }
+          }
+        },
+        "basis": { "enum": ["heating", "fission"] },
+        "normalization": { "const": "fraction-of-total-power" },
+        "form": { "const": "separable" },
+        "base": { "type": "string" },
+        "baseUnc": { "type": "string" },
+        "volumes": { "type": "string" },
+        "rodDeltas": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object", "required": ["x", "array"], "additionalProperties": false,
+            "properties": { "x": { "$ref": "#/$defs/numbers" }, "array": { "type": "string" } }
+          }
+        },
+        "tempDelta": {
+          "type": "object", "required": ["T", "array"], "additionalProperties": false,
+          "properties": { "T": { "$ref": "#/$defs/numbers" }, "array": { "type": "string" } }
+        }
+      }
+    },
+    "arrays": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["file", "dtype", "byteOrder", "shape", "order", "offset", "byteLength", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "dtype": { "const": "float32" },
+          "byteOrder": { "const": "little" },
+          "shape": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+          "order": { "const": "C" },
+          "offset": { "type": "integer", "minimum": 0 },
+          "byteLength": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "required": ["units", "up", "primitives"],
+      "additionalProperties": false,
+      "properties": {
+        "units": { "const": "cm" },
+        "up": { "const": "z" },
+        "primitives": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/primitive" } }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "required": ["rods", "Tfuel", "Tcoolant", "xenon", "jointChecked"],
+      "additionalProperties": false,
+      "properties": {
+        "rods": { "type": "object", "additionalProperties": { "$ref": "#/$defs/interval" } },
+        "Tfuel": { "$ref": "#/$defs/interval" },
+        "Tcoolant": { "$ref": "#/$defs/interval" },
+        "xenon": { "$ref": "#/$defs/interval" },
+        "jointChecked": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["rods", "maxShapeErr", "rhoErr"], "additionalProperties": false,
+            "properties": {
+              "rods": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 } },
+              "Tfuel": { "type": "number" },
+              "maxShapeErr": { "type": "number", "minimum": 0 },
+              "rhoErr": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": { "type": "string", "pattern": "^(transport|assumed|calibration|synthetic|cited:[A-Za-z0-9_.-]+)$" },
+    "scalar": {
+      "type": "object", "required": ["value", "source"], "additionalProperties": false,
+      "properties": { "value": { "type": "number" }, "unc": { "type": "number", "minimum": 0 }, "source": { "$ref": "#/$defs/source" } }
+    },
+    "scalarPositive": {
+      "type": "object", "required": ["value", "source"], "additionalProperties": false,
+      "properties": { "value": { "type": "number", "exclusiveMinimum": 0 }, "unc": { "type": "number", "minimum": 0 }, "source": { "$ref": "#/$defs/source" } }
+    },
+    "scalarNonNegative": {
+      "type": "object", "required": ["value", "source"], "additionalProperties": false,
+      "properties": { "value": { "type": "number", "minimum": 0 }, "unc": { "type": "number", "minimum": 0 }, "source": { "$ref": "#/$defs/source" } }
+    },
+    "scalarFraction": {
+      "type": "object", "required": ["value", "source"], "additionalProperties": false,
+      "properties": { "value": { "type": "number", "minimum": 0, "maximum": 1 }, "unc": { "type": "number", "minimum": 0 }, "source": { "$ref": "#/$defs/source" } }
+    },
+    "six": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "number", "minimum": 0 } },
+    "numbers": { "type": "array", "minItems": 2, "items": { "type": "number" } },
+    "interval": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+    "interp": { "const": "linear" },
+    "outOfRange": { "enum": ["clamp-and-flag", "extrapolate-and-flag", "reject"] },
+    "tableT": {
+      "type": "object", "required": ["T", "rho", "interp", "outOfRange", "source"], "additionalProperties": false,
+      "properties": {
+        "T": { "$ref": "#/$defs/numbers" }, "rho": { "$ref": "#/$defs/numbers" }, "unc": { "$ref": "#/$defs/numbers" },
+        "interp": { "$ref": "#/$defs/interp" }, "outOfRange": { "$ref": "#/$defs/outOfRange" }, "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "tableN": {
+      "type": "object", "required": ["N", "rho", "interp", "outOfRange", "source"], "additionalProperties": false,
+      "properties": {
+        "N": { "$ref": "#/$defs/numbers" }, "rho": { "$ref": "#/$defs/numbers" }, "unc": { "$ref": "#/$defs/numbers" },
+        "interp": { "$ref": "#/$defs/interp" }, "outOfRange": { "$ref": "#/$defs/outOfRange" }, "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "tableX": {
+      "type": "object", "required": ["x", "rho", "interp", "outOfRange", "source"], "additionalProperties": false,
+      "properties": {
+        "x": { "$ref": "#/$defs/numbers" }, "rho": { "$ref": "#/$defs/numbers" }, "unc": { "$ref": "#/$defs/numbers" },
+        "interp": { "$ref": "#/$defs/interp" }, "outOfRange": { "$ref": "#/$defs/outOfRange" }, "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "rod": {
+      "type": "object",
+      "required": ["id", "name", "travelCm", "speed", "pulseCapable", "worth", "scram"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "name": { "type": "string" },
+        "travelCm": { "type": "number", "exclusiveMinimum": 0 },
+        "speed": { "type": "number", "exclusiveMinimum": 0 },
+        "pulseCapable": { "type": "boolean" },
+        "fireTime": { "type": "number", "exclusiveMinimum": 0 },
+        "worth": { "$ref": "#/$defs/tableX" },
+        "scram": {
+          "type": "object", "required": ["t", "x", "source"], "additionalProperties": false,
+          "properties": { "t": { "$ref": "#/$defs/numbers" }, "x": { "$ref": "#/$defs/numbers" }, "source": { "$ref": "#/$defs/source" } }
+        }
+      }
+    },
+    "predicate": {
+      "anyOf": [
+        {
+          "type": "object", "required": ["op", "value"], "additionalProperties": false,
+          "properties": {
+            "signal": { "type": "string" },
+            "op": { "enum": ["gt", "ge", "lt", "le", "absGt", "eq", "ne"] },
+            "value": { "anyOf": [{ "type": "number" }, { "type": "string" }] }
+          }
+        },
+        {
+          "type": "object", "required": ["op", "value"], "additionalProperties": false,
+          "properties": {
+            "signal": { "type": "string" },
+            "op": { "const": "between" },
+            "value": { "$ref": "#/$defs/interval" }
+          }
+        },
+        { "type": "object", "required": ["all"], "additionalProperties": false,
+          "properties": { "all": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/predicate" } } } },
+        { "type": "object", "required": ["any"], "additionalProperties": false,
+          "properties": { "any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/predicate" } } } },
+        { "type": "object", "required": ["not"], "additionalProperties": false,
+          "properties": { "not": { "$ref": "#/$defs/predicate" } } }
+      ]
+    },
+    "vec3": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+    "primitive": {
+      "anyOf": [
+        {
+          "type": "object", "required": ["type", "center", "radius", "height", "material"], "additionalProperties": false,
+          "properties": {
+            "type": { "const": "cylinder" }, "center": { "$ref": "#/$defs/vec3" },
+            "radius": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 },
+            "material": { "type": "string" }, "element": { "type": "string" }, "rod": { "type": "string" }
+          }
+        },
+        {
+          "type": "object", "required": ["type", "center", "rInner", "radius", "height", "material"], "additionalProperties": false,
+          "properties": {
+            "type": { "const": "annulus" }, "center": { "$ref": "#/$defs/vec3" },
+            "rInner": { "type": "number", "minimum": 0 }, "radius": { "type": "number", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "exclusiveMinimum": 0 },
+            "material": { "type": "string" }, "element": { "type": "string" }, "rod": { "type": "string" }
+          }
+        },
+        {
+          "type": "object", "required": ["type", "center", "size", "material"], "additionalProperties": false,
+          "properties": {
+            "type": { "const": "box" }, "center": { "$ref": "#/$defs/vec3" }, "size": { "$ref": "#/$defs/vec3" },
+            "material": { "type": "string" }, "element": { "type": "string" }, "rod": { "type": "string" }
+          }
+        }
+      ]
+    }
+  }
+}

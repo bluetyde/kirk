@@ -1,0 +1,14 @@
+[project]
+name = "kirk-kinetics"
+version = "0.1.0"
+description = "KIRK, Kernel for Independent Reactor Kinetics: a dependency-free, deterministic point-kinetics engine"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = []        # standard library only
+
+[project.optional-dependencies]
+crosscheck = ["numpy", "scipy"]   # the independent-integrator test; skipped without them
+
+[tool.setuptools.packages.find]
+include = ["kirk*"]

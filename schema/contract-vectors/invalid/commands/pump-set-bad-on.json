@@ -1,0 +1,11 @@
+{
+ "document": {
+  "on": "yes",
+  "pump": "primary",
+  "type": "pump.set"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'pump.set' with string instead of boolean for 'on'"
+}

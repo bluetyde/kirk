@@ -1,0 +1,11 @@
+{
+ "document": {
+  "direction": "sideways",
+  "rod": "transient",
+  "type": "rod.move"
+ },
+ "expectedCodes": [
+  "E_SCHEMA"
+ ],
+ "note": "Command 'rod.move' with invalid direction 'sideways'"
+}
