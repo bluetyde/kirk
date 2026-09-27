@@ -1,14 +1,30 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "kirk-kinetics"
-version = "0.1.0"
+name = "kirk-kinetics"              # the import name is kirk (PyPI "kirk" is taken)
+version = "0.2.0"
 description = "KIRK, Kernel for Independent Reactor Kinetics: a dependency-free, deterministic point-kinetics engine"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = []        # standard library only
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 
 [project.optional-dependencies]
 crosscheck = ["numpy", "scipy"]   # the independent-integrator test; skipped without them
 
+[project.scripts]
+kirk-validate = "kirk.libformat.validate:main"
+
 [tool.setuptools.packages.find]
 include = ["kirk*"]
+
+[tool.setuptools.package-data]
+kirk = ["schemas/*.json"]

@@ -4,11 +4,11 @@
  * Ported line for line from kirk/engine.py. Inputs are plain params (./params.ts).
  */
 
-import { MASK64, SplitMix64, luFactor, luSolve, type LUFactored } from "./numerics";
-import { Model, Table, checkParams, paramsDigest, type ReactorParams } from "./params";
+import { MASK64, SplitMix64, luFactor, luSolve, type LUFactored } from "./numerics.js";
+import { Model, Table, checkParams, paramsDigest, type ReactorParams } from "./params.js";
 
 export const ENGINE_VERSION = "0.2.0";
-export { CAPABILITY } from "./params";
+export { CAPABILITY } from "./params.js";
 
 export interface EngineConfig {
   outerDt: number;

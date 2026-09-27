@@ -1,5 +1,5 @@
 {
- "$id": "https://github.com/bluetyde/virtual-reactor/schema/snapshot.schema.json",
+ "$id": "https://github.com/bluetyde/kirk/kirk/schemas/snapshot.schema.json",
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "additionalProperties": false,
  "description": "Structure only. Keywords used are limited to the subset implemented by pipeline/library/minischema.py.",

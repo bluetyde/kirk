@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { CheckpointError, Engine, IP } from "./engine";
-import { ParamsError, canon, checkParams, paramsDigest, type ReactorParams } from "./params";
-import { sha256HexSync } from "./sha256";
+import { CheckpointError, Engine, IP } from "./engine.js";
+import { ParamsError, canon, checkParams, paramsDigest, type ReactorParams } from "./params.js";
+import { sha256HexSync } from "./sha256.js";
 
 // Shared with tests/test_params.py: the base core, check cases, digests and a pinned run both languages must agree on.
 const CHECKS = JSON.parse(

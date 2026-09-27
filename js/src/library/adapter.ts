@@ -6,11 +6,11 @@
  * only what the engine reads: wrappers are removed and shape arrays are loaded inline.
  */
 
-import { CAPABILITY, type ReactorParams, type TableParams } from "../sim/params";
-import type { LibraryReader } from "./platform";
-import { sha256Hex } from "./platform";
-import type { Issue } from "./validate";
-import { validateLibrary } from "./validate";
+import { CAPABILITY, type ReactorParams, type TableParams } from "../sim/params.js";
+import type { LibraryReader } from "./platform.js";
+import { sha256Hex } from "./platform.js";
+import type { Issue } from "./validate.js";
+import { validateLibrary } from "./validate.js";
 
 export class LibraryError extends Error {
   issues: Issue[];

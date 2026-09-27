@@ -4,10 +4,10 @@
  * Ported from pipeline/library/validate.py.
  */
 
-import librarySchema from "../../../schema/library.schema.json";
-import { Validator } from "./minischema";
-import type { LibraryReader } from "./platform";
-import { sha256Hex } from "./platform";
+import { librarySchema } from "../schemas.js";
+import { Validator } from "./minischema.js";
+import type { LibraryReader } from "./platform.js";
+import { sha256Hex } from "./platform.js";
 
 export const SUPPORTED_VERSIONS = ["0.1.0"];
 export const SUPPORTED_CAPABILITIES = ["point-kinetics/lumped-thermal-v1"];

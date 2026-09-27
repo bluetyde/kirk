@@ -59,6 +59,46 @@ jobs:
           VR_PYTHON: python
       - run: npm run typecheck
 
+  packages:
+    name: Packages (build, install, smoke test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+      - name: js/LICENSE is a copy of LICENSE
+        run: cmp LICENSE js/LICENSE
+      - name: Build the Python sdist and wheel
+        run: |
+          python -m pip install build
+          python -m build --outdir "$RUNNER_TEMP/py" .
+      - name: Install the wheel in a clean venv and smoke-test it outside the repository
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install "$RUNNER_TEMP"/py/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/venv/bin/python" -I "$GITHUB_WORKSPACE/tests/installed_smoke.py" "$GITHUB_WORKSPACE"
+      - name: Pack the npm tarball
+        working-directory: js
+        run: |
+          npm ci --ignore-scripts
+          npm pack --pack-destination "$RUNNER_TEMP/npm"
+      - name: Install the tarball in a clean folder, smoke-test it and typecheck a consumer
+        run: |
+          cd "$RUNNER_TEMP/npm"
+          echo '{"name": "consumer", "private": true, "type": "module"}' > package.json
+          npm install --no-audit --no-fund ./kirk-kinetics-*.tgz
+          cp "$GITHUB_WORKSPACE/js/scripts/installed-smoke.mjs" "$GITHUB_WORKSPACE/js/scripts/consumer-check.ts" .
+          node installed-smoke.mjs "$GITHUB_WORKSPACE"
+          "$GITHUB_WORKSPACE/js/node_modules/.bin/tsc" --noEmit --strict --module nodenext --moduleResolution nodenext \
+            --target es2023 --types node --typeRoots "$GITHUB_WORKSPACE/js/node_modules/@types" consumer-check.ts
+
   line-endings:
     name: LF line endings
     runs-on: ubuntu-latest

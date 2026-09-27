@@ -8,8 +8,8 @@ import {
   IX,
   InitError,
   ros3pCoeffs,
-} from "./engine";
-import { Model } from "./params";
+} from "./engine.js";
+import { Model } from "./params.js";
 import {
   comparable,
   engineVectorsDir,
@@ -19,8 +19,8 @@ import {
   pulseLib,
   scriptedRun,
   scriptedRunRos3p,
-} from "./testing";
-import { runScenario } from "./vectors";
+} from "./testing.js";
+import { runScenario } from "./vectors.js";
 
 async function fixedStepIntegration(methodName: "ros2" | "ros3p", h: number): Promise<number> {
   const L = await kineticsOnlyLib();

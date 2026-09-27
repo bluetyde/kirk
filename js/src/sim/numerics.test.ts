@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { luFactor, luSolve, solve, SplitMix64 } from "./numerics";
+import { luFactor, luSolve, solve, SplitMix64 } from "./numerics.js";
 
 describe("SplitMix64", () => {
   it("matches reference 64-bit hex sequences for seed 1", () => {

@@ -1,6 +1,6 @@
 # Reactor library format, v0.1.0 (normative)
 
-This document and [`schema/library.schema.json`](../schema/library.schema.json) are the **only normative definition** of a reactor library.
+This document and [`kirk/schemas/library.schema.json`](../kirk/schemas/library.schema.json) are the **only normative definition** of a reactor library.
 The schema checks structure. This document defines meaning and the semantic checks the schema can't express.
 Plans and code link here instead of restating fields. Design background: [plans/03](plans/03-library-format.md).
 

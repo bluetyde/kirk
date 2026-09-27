@@ -3,18 +3,18 @@ from __future__ import annotations
 import copy
 import json
 import math
-from pathlib import Path
+from importlib.resources import files
 from typing import Any
 
 from kirk.libformat.minischema import Validator
 from kirk.libformat.validate import Issue
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-COMMAND_SCHEMA_PATH = REPO_ROOT / "schema" / "command.schema.json"
-SNAPSHOT_SCHEMA_PATH = REPO_ROOT / "schema" / "snapshot.schema.json"
+# Package data (kirk/schemas), so the validators also work from an installed package.
+COMMAND_SCHEMA_PATH = files("kirk").joinpath("schemas", "command.schema.json")
+SNAPSHOT_SCHEMA_PATH = files("kirk").joinpath("schemas", "snapshot.schema.json")
 
 
-def _load_validator(path: Path) -> Validator:
+def _load_validator(path) -> Validator:
     schema = json.loads(path.read_text(encoding="utf-8"))
     return Validator(schema)
 

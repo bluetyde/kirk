@@ -4,11 +4,11 @@
 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadParams } from "../library/adapter";
-import { nodeReader } from "../library/node-reader";
-import { Engine } from "./engine";
-import { Model, type ReactorParams } from "./params";
-import { nearCriticalRods } from "./vectors";
+import { loadParams } from "../library/adapter.js";
+import { nodeReader } from "../library/node-reader.js";
+import { Engine } from "./engine.js";
+import { Model, type ReactorParams } from "./params.js";
+import { nearCriticalRods } from "./vectors.js";
 
 export const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 export const syntheticCorePath = join(repoRoot, "schema", "vectors", "synthetic-core");

@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { nodeReader } from "./node-reader";
-import { validateLibrary } from "./validate";
+import { nodeReader } from "./node-reader.js";
+import { validateLibrary } from "./validate.js";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const vectors = join(repoRoot, "schema", "vectors");

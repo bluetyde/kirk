@@ -4,8 +4,8 @@
  * Ported from kirk/vectors.py.
  */
 
-import { Engine } from "./engine";
-import { Model, type ReactorParams } from "./params";
+import { Engine } from "./engine.js";
+import { Model, type ReactorParams } from "./params.js";
 
 export const TOLERANCES = {
   power: { rel: 1e-9, abs: 1e-15 },

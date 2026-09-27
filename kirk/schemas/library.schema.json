@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/bluetyde/virtual-reactor/schema/library.schema.json",
+  "$id": "https://github.com/bluetyde/kirk/kirk/schemas/library.schema.json",
   "title": "Reactor library manifest, v0.1.0",
   "description": "Structure only. Meaning and semantic checks: docs/library-format.md. Keywords used are limited to the subset implemented by pipeline/library/minischema.py.",
   "type": "object",

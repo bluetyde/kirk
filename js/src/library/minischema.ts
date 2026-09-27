@@ -1,5 +1,5 @@
 /**
- * Minimal JSON Schema checker for the subset used by schema/library.schema.json,
+ * Minimal JSON Schema checker for the subset used by kirk/schemas/library.schema.json,
  * command.schema.json, and snapshot.schema.json.
  *
  * Ported from pipeline/library/minischema.py.

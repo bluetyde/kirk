@@ -2,9 +2,9 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadParams } from "../library/adapter";
-import { nodeReader } from "../library/node-reader";
-import { validateLibrary } from "../library/validate";
+import { loadParams } from "../library/adapter.js";
+import { nodeReader } from "../library/node-reader.js";
+import { validateLibrary } from "../library/validate.js";
 import {
   CheckpointError,
   Engine,
@@ -17,8 +17,8 @@ import {
   IX,
   InitError,
   roundHalfEven,
-} from "./engine";
-import { Model } from "./params";
+} from "./engine.js";
+import { Model } from "./params.js";
 import {
   comparable,
   inhourOmega,
@@ -27,8 +27,8 @@ import {
   pulseLib,
   scriptedRun,
   syntheticCorePath,
-} from "./testing";
-import { nearCriticalRods } from "./vectors";
+} from "./testing.js";
+import { nearCriticalRods } from "./vectors.js";
 
 describe("TestInitialization", () => {
   it("source equilibrium matches formula and holds", async () => {
