@@ -13,8 +13,8 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
 3. **Packaging.** Python: build and install check of `kirk-kinetics` (PyPI `kirk` is taken). npm: emit JS + `.d.ts` (currently `tsc --noEmit` only), package name `kirk-kinetics`.
 4. **CI.** GitHub Actions: Python 3.11 and 3.13 (`python -m unittest`), Node 24 (`npm ci --ignore-scripts && npm test && npm run typecheck`).
 5. **Codex review of the TS port** (open since virtual-reactor A6-1).
-6. **Source of truth.** Until virtual-reactor switches to depending on KIRK, engine changes must be made in one place. Proposed: new engine work happens here,
-   and virtual-reactor pulls it; decide before the first engine change.
+6. **Independence (decided 2026-09-27 by the user).** KIRK is an independent project. virtual-reactor keeps and develops its own engine;
+   neither repo depends on the other. Porting a change across is a deliberate choice, not an obligation, so KIRK can change its API freely.
 
 ## Log
 
