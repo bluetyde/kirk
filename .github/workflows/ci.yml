@@ -1,0 +1,72 @@
+# Tests for both engines on every push to main and every pull request (NOTES item 4).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python ${{ matrix.python }}${{ matrix.scipy && ' + scipy' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 3.11 is the version that generates the golden vectors. It also installs
+          # numpy and scipy, so the optional Radau cross-check runs instead of skipping.
+          - python: "3.11"
+            scipy: true
+          - python: "3.13"
+            scipy: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install numpy and scipy (cross-check test only; kirk/ uses the standard library)
+        if: matrix.scipy
+        run: python -m pip install numpy scipy
+      - name: Unit tests
+        run: python -m unittest -v
+      - name: Validate the example library
+        run: python -W error -m kirk.libformat.validate libraries/triga-jsi
+
+  typescript:
+    name: TypeScript (Node 24)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: js
+    steps:
+      - uses: actions/checkout@v4
+      # The validator parity test runs the Python validator.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm test
+        env:
+          VR_PYTHON: python
+      - run: npm run typecheck
+
+  line-endings:
+    name: LF line endings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No CR bytes in tracked text files
+        run: |
+          if git grep -I -l $'\r' -- . ':!*.bin'; then
+            echo "The files above contain CR bytes; the repository uses LF only." >&2
+            exit 1
+          fi

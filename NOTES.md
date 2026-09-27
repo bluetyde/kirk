@@ -12,7 +12,8 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
    (the `period > 0` leaf of `period-short`, when power turns from slowly falling to slowly rising: a genuine boundary of the trip condition), about 0.06% of the
    right-hand-side calls. Testing period crossings on the inverse period (continuous through the pole) was prototyped and saved almost nothing, so it wasn't kept.
 3. **Packaging.** Python: build and install check of `kirk-kinetics` (PyPI `kirk` is taken). npm: emit JS + `.d.ts` (currently `tsc --noEmit` only), package name `kirk-kinetics`.
-4. **CI.** GitHub Actions: Python 3.11 and 3.13 (`python -m unittest`), Node 24 (`npm ci --ignore-scripts && npm test && npm run typecheck`).
+4. ~~CI~~ (added 2026-09-27, see the Log). `.github/workflows/ci.yml` runs on pushes to main and on pull requests. Still to do: make its jobs
+   required checks for main (a repository setting, not a file).
 5. **Codex review of the TS port** (open since virtual-reactor A6-1).
 6. **Independence (decided 2026-09-27 by the user).** KIRK is an independent project. virtual-reactor keeps and develops its own engine;
    neither repo depends on the other. Porting a change across is a deliberate choice, not an obligation, so KIRK can change its API freely.
@@ -44,3 +45,9 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
   path, and TypeScript must match the Python run within the golden-vector tolerance (rel 1e-9). The docs now say that params checks cover structure
   only: the library validator's physics conventions (tables zero at the reference point, shape sums) apply only to library folders.
   80 Python and 88 TypeScript tests pass (TypeScript counts fewer because the 15 per-case tests became one test over all 55 shared cases).
+- 2026-09-27: merged the plain parameter API into main (bluetyde/kirk#1, merge commit `86a762c`, at the user's request).
+- 2026-09-27: CI (NOTES item 4, Claude Code). `.github/workflows/ci.yml` has three jobs. Python: 3.11 with numpy and scipy (so the Radau
+  cross-check runs) and 3.13 without them, each running `python -m unittest` and `python -W error -m kirk.libformat.validate libraries/triga-jsi`.
+  TypeScript: Node 24 with Python 3.11 for the validator parity test (`npm ci --ignore-scripts`, `npm test`, `npm run typecheck`). Line endings:
+  fails on CR bytes in tracked text files. Before pushing, the Python suite passed locally on 3.11.15 (80 tests) and 3.13.12 (80 tests, scipy
+  test skipped). Node 24 was not available locally (the container has Node 22), so the first CI run is the first Node 24 run.

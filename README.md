@@ -54,6 +54,8 @@ only to library folders. The engine also pins a digest of the params content in
 checkpoints and sessions, so an edited copy can never restore a checkpoint made with the original. Without a `validity`
 section the engine reports `unvalidated` (`R_PARAMS_UNVALIDATED`), and without a `shape` section `shape()` is not available.
 
+CI (`.github/workflows/ci.yml`) runs the same commands on Python 3.11 and 3.13 and Node 24 for every pull request.
+
 Regenerate golden vectors (`python -m kirk.vectors`) and fixtures on Linux Python 3.11: other platforms change the last bits of floats, which the tests tolerate but which adds noise to diffs.
 
 ## License
