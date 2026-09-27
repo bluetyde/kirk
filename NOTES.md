@@ -22,3 +22,4 @@ Working notes for whoever picks this up (including cloud sessions, which can't s
   `pipeline.contracts` → `kirk.contracts`). The synthetic core was regenerated (its manifest names the generator module), so its digest and the golden
   vectors' `libraryDigest` pins differ from virtual-reactor's; the vector data are otherwise identical. Vectors and contract fixtures regenerated on Linux
   Python 3.11.15. 69 Python and 77 TypeScript tests pass.
+- 2026-09-27: `python -m kirk.libformat.validate` prints a RuntimeWarning because `kirk/__init__` imports the validator before runpy executes it; harmless, fix with a small `kirk/libformat/__main__`-style entry point or a console script.
