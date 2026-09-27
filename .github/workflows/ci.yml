@@ -88,6 +88,7 @@ jobs:
         working-directory: js
         run: |
           npm ci --ignore-scripts
+          mkdir -p "$RUNNER_TEMP/npm"   # npm pack does not create the destination
           npm pack --pack-destination "$RUNNER_TEMP/npm"
       - name: Install the tarball in a clean folder, smoke-test it and typecheck a consumer
         run: |
