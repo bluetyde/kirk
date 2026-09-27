@@ -12,7 +12,8 @@ import json
 from pathlib import Path
 
 from .engine import Engine
-from .library import Library
+from .libformat import load_params
+from .params import Model, ReactorParams
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = REPO_ROOT / "schema" / "engine-vectors"
@@ -26,13 +27,11 @@ TOLERANCES = {
 }
 
 
-def near_critical_rods(lib: Library, target_rho: float) -> dict[str, float]:
-    """Safety fully out, transient in, regulating placed so the reference-temperature reactivity is target_rho.
-
-    Mirrors the test helper in tests.test_engine.
-    """
-    base = lib.ref_rho + lib.rod_by_id["safety"].worth(1.0)
-    reg = lib.rod_by_id["regulating"].worth
+def near_critical_rods(params: ReactorParams, target_rho: float) -> dict[str, float]:
+    """Safety fully out, transient in, regulating placed so the reference-temperature reactivity is target_rho."""
+    m = Model(params)
+    base = m.ref_rho + m.rod_by_id["safety"].worth(1.0)
+    reg = m.rod_by_id["regulating"].worth
     lo, hi = 0.0, 1.0
     for _ in range(100):
         mid = 0.5 * (lo + hi)
@@ -40,9 +39,9 @@ def near_critical_rods(lib: Library, target_rho: float) -> dict[str, float]:
     return {"safety": 1.0, "regulating": 0.5 * (lo + hi), "transient": 0.0}
 
 
-def _scenarios(lib: Library) -> list[dict]:
+def _scenarios(params: ReactorParams) -> list[dict]:
     """Scenario definitions. Built when generating, so importing this module has no side effects."""
-    _near_crit = near_critical_rods(lib, -0.0005)
+    _near_crit = near_critical_rods(params, -0.0005)
     return [
         {
             "name": "source-level",
@@ -147,8 +146,8 @@ def sample_from_engine(e: Engine) -> dict:
     }
 
 
-def run_scenario(lib: Library, sc: dict) -> dict:
-    e = Engine(lib, init=sc["init"], seed=sc["seed"], config=sc["config"])
+def run_scenario(params: ReactorParams, sc: dict) -> dict:
+    e = Engine(params, init=sc["init"], seed=sc["seed"], config=sc["config"])
     sample_every = sc["sampleEvery"]
     total_steps = sc["steps"]
 
@@ -178,7 +177,7 @@ def run_scenario(lib: Library, sc: dict) -> dict:
         "steps": sc["steps"],
         "sampleEvery": sc["sampleEvery"],
         "script": copy.deepcopy(sc["script"]),
-        "libraryId": lib.id,
+        "libraryId": params["id"],
         "pins": e.pins(),
         "samples": samples,
         "events": copy.deepcopy(e.events),
@@ -195,10 +194,10 @@ def generate(out: Path = DEFAULT_OUT) -> list[str]:
     for p in out.glob("*.json"):
         p.unlink()
 
-    lib = Library(SYNTHETIC_CORE)
+    params = load_params(SYNTHETIC_CORE)
     names = []
-    for sc in _scenarios(lib):
-        doc = run_scenario(lib, sc)
+    for sc in _scenarios(params):
+        doc = run_scenario(params, sc)
         content = json.dumps(doc, indent=1, sort_keys=True, allow_nan=False) + "\n"
         (out / f"{sc['name']}.json").write_bytes(content.encode("utf-8"))
         names.append(sc["name"])

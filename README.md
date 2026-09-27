@@ -18,13 +18,13 @@ Validation there: analytic checks (Nordheim–Fuchs within 0.1%, inhour period, 
 
 | Path | What |
 |---|---|
-| `kirk/` | Engine (`engine.py`), library loader (`library.py`), numerics (`numerics.py`), golden-vector generator (`vectors.py`) |
-| `kirk/libformat/` | The reactor library format: validator, minimal JSON Schema checker, synthetic test core generator |
+| `kirk/` | Engine (`engine.py`), plain engine inputs (`params.py`), numerics (`numerics.py`), golden-vector generator (`vectors.py`) |
+| `kirk/libformat/` | The reactor library format: validator, minimal JSON Schema checker, synthetic test core generator, and the adapter that builds params from a library folder (`adapter.py`) |
 | `kirk/contracts/` | Command and snapshot schemas' validator and fixtures |
 | `schema/` | JSON Schemas, the synthetic core and invalid fixtures, golden vectors, contract fixtures |
 | `docs/library-format.md` | The normative library format (v0.1.0, 28 error codes) |
 | `libraries/triga-jsi/` | An example library (experimental) |
-| `js/` | TypeScript port (`src/sim`), validators (`src/library`, `src/contracts`), Vitest tests |
+| `js/` | TypeScript port (`src/sim`), validators and library adapter (`src/library`), contracts (`src/contracts`), Vitest tests |
 
 ## Use
 
@@ -34,14 +34,23 @@ python -m kirk.libformat.validate libraries/triga-jsi
 cd js && npm ci --ignore-scripts && npm test
 ```
 
+The engine runs from plain params: JSON-shaped data with kinetics, rods, feedback tables, thermal, poisons and plant rules.
+`kirk/params.py` (and `js/src/sim/params.ts`) defines the fields. A library folder is one way to get params:
+
 ```python
-from kirk import Engine, Library
-lib = Library("schema/vectors/synthetic-core")
-e = Engine(lib, {"power": {"mode": "source-equilibrium"}})
+from kirk import Engine
+from kirk.libformat import load_params
+params = load_params("schema/vectors/synthetic-core")   # validates the folder, then builds the params
+e = Engine(params, {"power": {"mode": "source-equilibrium"}})
 e.submit({"type": "rod.move", "rod": "regulating", "direction": "out"})
 e.advance(10.0)
 print(e.snapshot()["truth"]["power"])
 ```
+
+You can also write params by hand, or change a copy of loaded params (`tests/test_params.py` has a complete one-rod core).
+The engine checks params (`ParamsError` names the JSON path of the first problem) and pins a digest of their content in
+checkpoints and sessions, so an edited copy can never restore a checkpoint made with the original. Without a `validity`
+section the engine reports `unvalidated` (`R_PARAMS_UNVALIDATED`), and without a `shape` section `shape()` is not available.
 
 Regenerate golden vectors (`python -m kirk.vectors`) and fixtures on Linux Python 3.11: other platforms change the last bits of floats, which the tests tolerate but which adds noise to diffs.
 

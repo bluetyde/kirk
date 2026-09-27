@@ -9,7 +9,7 @@ import {
   InitError,
   ros3pCoeffs,
 } from "./engine";
-import { Table } from "./library";
+import { Model } from "./params";
 import {
   comparable,
   engineVectorsDir,
@@ -46,8 +46,8 @@ async function fixedStepIntegration(methodName: "ros2" | "ros3p", h: number): Pr
 
 async function runTimeDependentAccuracy(): Promise<number> {
   const L = await kineticsOnlyLib();
-  L.calibration = -(L.refRho + L.rodById.regulating!.worth.at(0.4));
-  await L.markModified("time-dependent-accuracy");
+  const M = new Model(L);
+  L.reference.calibration = -(M.refRho + M.rodById.regulating!.worth.at(0.4));
   const e = new Engine(
     L,
     {
@@ -139,15 +139,17 @@ describe("TestROS3P", () => {
   it("analytic checks with ros3p", async () => {
     // 1. source equilibrium matches formula and holds
     const L = await loadSyntheticCore();
+    const M = new Model(L);
     const e = new Engine(L, {}, 1, { method: "ros3p" });
     const rho = e.reactivity(0.0, e.y).total;
-    expect(Math.abs(e.y[IP]! - (-L.extSource * L.genTime) / rho)).toBeLessThanOrEqual(1e-15);
+    expect(Math.abs(e.y[IP]! - (-M.extSource * M.genTime) / rho)).toBeLessThanOrEqual(1e-15);
     const p0 = e.y[IP]!;
     e.advance(20.0);
     expect(Math.abs(e.y[IP]! / p0 - 1.0)).toBeLessThan(1e-8);
 
     // 2. prompt jump
     const kLib = await kineticsOnlyLib();
+    const kM = new Model(kLib);
     const eJump = new Engine(
       kLib,
       { power: { mode: "critical-equilibrium", value: 1.0 } },
@@ -157,7 +159,7 @@ describe("TestROS3P", () => {
     const rhoJump = 0.001;
     eJump.submit({ type: "fault.reactivity", deltaRho: rhoJump });
     eJump.advance(0.05);
-    const expected = kLib.betaTotal / (kLib.betaTotal - rhoJump);
+    const expected = kM.betaTotal / (kM.betaTotal - rhoJump);
     expect(Math.abs(eJump.y[IP]! / expected - 1.0)).toBeLessThan(3e-3);
 
     // 3. stable period matches inhour
@@ -176,6 +178,7 @@ describe("TestROS3P", () => {
 
     // 4. Nordheim-Fuchs peak check
     const [pL, K] = await pulseLib(false);
+    const pM = new Model(pL);
     const rhoP = 0.003;
     const ePulse = new Engine(
       pL,
@@ -183,11 +186,11 @@ describe("TestROS3P", () => {
       1,
       { method: "ros3p", outerDt: 1e-3 },
     );
-    ePulse.submit({ type: "fault.reactivity", deltaRho: pL.betaTotal + rhoP });
+    ePulse.submit({ type: "fault.reactivity", deltaRho: pM.betaTotal + rhoP });
     while (ePulse.t < 0.6) {
       ePulse.step();
     }
-    const pMax = (rhoP * rhoP) / (2 * K * pL.genTime);
+    const pMax = (rhoP * rhoP) / (2 * K * pM.genTime);
     expect(Math.abs(ePulse.peakPower / pMax - 1.0)).toBeLessThan(1e-3);
   });
 

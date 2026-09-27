@@ -1,14 +1,14 @@
 /**
  * Reference engine for capability point-kinetics/lumped-thermal-v1.
  *
- * Ported line for line from kirk/engine.py.
+ * Ported line for line from kirk/engine.py. Inputs are plain params (./params.ts).
  */
 
-import { Library, Table } from "./library";
 import { MASK64, SplitMix64, luFactor, luSolve, type LUFactored } from "./numerics";
+import { Model, Table, checkParams, paramsDigest, type ReactorParams } from "./params";
 
-export const ENGINE_VERSION = "0.1.0";
-export const CAPABILITY = "point-kinetics/lumped-thermal-v1";
+export const ENGINE_VERSION = "0.2.0";
+export { CAPABILITY } from "./params";
 
 export interface EngineConfig {
   outerDt: number;
@@ -176,7 +176,9 @@ export function evalPredicate(p: any, get: (s: string) => any, defaultSig?: stri
 }
 
 export class Engine {
-  lib: Library;
+  params: ReactorParams;
+  digest: string;
+  model: Model;
   config: EngineConfig;
   initSpec: any;
   seed: number | bigint;
@@ -219,11 +221,11 @@ export class Engine {
   private _stepExp: number;
   private _stepFac: (err: number) => number;
 
-  constructor(lib: Library, init?: any, seed: number | bigint = 1, config?: Partial<EngineConfig>) {
-    if (!lib.manifest.capabilities.includes(CAPABILITY)) {
-      throw new InitError("E_INIT_INVALID", `library doesn't declare ${CAPABILITY}`);
-    }
-    this.lib = lib;
+  constructor(params: ReactorParams, init?: any, seed: number | bigint = 1, config?: Partial<EngineConfig>) {
+    this.params = structuredClone(params); // the caller may change its object later; this run keeps its inputs
+    checkParams(this.params);
+    this.digest = paramsDigest(this.params);
+    const mdl = (this.model = new Model(this.params));
     this.config = { ...DEFAULT_CONFIG, ...(config ?? {}) };
     const method = this.config.method;
     if (method === "ros2") {
@@ -242,7 +244,7 @@ export class Engine {
     this.seed = seed;
     this.rng = new SplitMix64(seed);
 
-    this.lagged = lib.instruments.filter(
+    this.lagged = mdl.instruments.filter(
       (ins: any) => ins.lag > 0 && LAGGABLE.includes(ins.signal.slice(6) as any),
     );
     this.lagIndex = {};
@@ -250,15 +252,9 @@ export class Engine {
       this.lagIndex[this.lagged[k].id] = NBASE + k;
     }
 
-    for (const ins of lib.instruments) {
-      if (ins.signal === "truth.mode") {
-        throw new InitError("E_INIT_INVALID", `instrument ${ins.id} can't measure the mode`);
-      }
-    }
-
     this.locatedTrips = [];
     this.boundaryTrips = [];
-    for (const trip of lib.trips) {
+    for (const trip of mdl.trips) {
       const sigs = predSignals(trip.predicate, trip.input);
       if (sigs.every((s) => s.startsWith("truth."))) {
         this.locatedTrips.push(trip);
@@ -292,18 +288,18 @@ export class Engine {
   }
 
   private _initState(init: any): void {
-    const lib = this.lib;
+    const mdl = this.model;
     const initRods = init.rods ?? {};
     const unknownRods = Object.keys(initRods)
-      .filter((rid) => !Object.hasOwn(lib.rodById, rid))
+      .filter((rid) => !Object.hasOwn(mdl.rodById, rid))
       .sort();
     if (unknownRods.length > 0) {
       throw new InitError("E_INIT_INVALID", `unknown rods [${unknownRods.map((r) => `'${r}'`).join(", ")}]`);
     }
 
     this.motions = {};
-    for (const r of lib.rods) {
-      const x0 = Number(Object.hasOwn(initRods, r.id) ? initRods[r.id] : lib.refRods[r.id]);
+    for (const r of mdl.rods) {
+      const x0 = Number(Object.hasOwn(initRods, r.id) ? initRods[r.id] : mdl.refRods[r.id]);
       this.motions[r.id] = { kind: "still", t0: 0.0, x0 };
     }
     for (const [rid, m] of Object.entries(this.motions)) {
@@ -312,19 +308,19 @@ export class Engine {
       }
     }
 
-    this.mode = init.mode ?? lib.initialMode;
-    if (!lib.modes.includes(this.mode)) {
+    this.mode = init.mode ?? mdl.initialMode;
+    if (!mdl.modes.includes(this.mode)) {
       throw new InitError("E_INIT_INVALID", `unknown mode '${this.mode}'`);
     }
 
     const initPumps = init.pumps ?? {};
     this.pumps = {};
-    for (const p of lib.pumps) {
+    for (const p of mdl.pumps) {
       this.pumps[p] = Boolean(Object.hasOwn(initPumps, p) ? initPumps[p] : true);
     }
 
-    const tf = Number(init.Tfuel ?? lib.refTfuel);
-    const tc = Number(init.Tcoolant ?? lib.refTcool);
+    const tf = Number(init.Tfuel ?? mdl.refTfuel);
+    const tc = Number(init.Tcoolant ?? mdl.refTcool);
 
     const poisons = init.poisons ?? { mode: "zero" };
     const power = init.power ?? { mode: "source-equilibrium" };
@@ -355,9 +351,9 @@ export class Engine {
       i0 = Number(poisons.I);
       x0 = Number(poisons.X);
     } else if (poisons.mode === "equilibrium") {
-      const phi = lib.fluxPerWatt * p0;
-      i0 = (lib.gammaI * lib.sigmaF * phi) / lib.lambdaI;
-      x0 = ((lib.gammaI + lib.gammaX) * lib.sigmaF * phi) / (lib.lambdaX + lib.sigmaX * phi);
+      const phi = mdl.fluxPerWatt * p0;
+      i0 = (mdl.gammaI * mdl.sigmaF * phi) / mdl.lambdaI;
+      x0 = ((mdl.gammaI + mdl.gammaX) * mdl.sigmaF * phi) / (mdl.lambdaX + mdl.sigmaX * phi);
     } else {
       throw new InitError("E_INIT_INVALID", `unknown poisons mode '${poisons.mode}'`);
     }
@@ -366,8 +362,8 @@ export class Engine {
 
     this.y = y;
     const rho = this.reactivity(0.0, y).total;
-    const S = lib.extSource;
-    const L = lib.genTime;
+    const S = mdl.extSource;
+    const L = mdl.genTime;
     if (power.mode === "source-equilibrium") {
       if (S <= 0.0) {
         throw new InitError("E_INIT_NO_EQUILIBRIUM", "source equilibrium needs a positive neutron source");
@@ -400,7 +396,7 @@ export class Engine {
     const prec = init.precursors ?? "equilibrium";
     if (prec === "equilibrium") {
       for (let i = 0; i < 6; i++) {
-        y[IC0 + i] = (lib.beta[i]! * p0) / (L * lib.lam[i]!);
+        y[IC0 + i] = (mdl.beta[i]! * p0) / (L * mdl.lam[i]!);
       }
     } else {
       if (!Array.isArray(prec) || prec.length !== 6 || prec.some((c: number) => c < 0)) {
@@ -424,7 +420,7 @@ export class Engine {
     if (k === "move") {
       return Math.min(1.0, Math.max(0.0, m.x0 + m.v * (t - m.t0)));
     }
-    const rod = this.lib.rodById[rid]!;
+    const rod = this.model.rodById[rid]!;
     if (k === "fire") {
       return Math.min(1.0, m.x0 + (t - m.t0) / rod.fireTime!);
     }
@@ -439,7 +435,7 @@ export class Engine {
       if (m.kind === "still") {
         continue;
       }
-      const rod = this.lib.rodById[rid]!;
+      const rod = this.model.rodById[rid]!;
       const x = this.rodPosition(rid, t);
       if (m.kind === "scram") {
         const tau = m.tau0 + (t - m.t0);
@@ -461,25 +457,25 @@ export class Engine {
       if (x <= 0.0) {
         this.motions[rid] = { kind: "still", t0: t, x0: 0.0 };
       } else {
-        this.motions[rid] = { kind: "scram", t0: t, tau0: this.lib.rodById[rid]!.scramTau(x) };
+        this.motions[rid] = { kind: "scram", t0: t, tau0: this.model.rodById[rid]!.scramTau(x) };
       }
     }
   }
 
   reactivity(t: number, y: number[]): Record<string, any> {
-    const lib = this.lib;
+    const mdl = this.model;
     let rods = 0.0;
-    for (const r of lib.rods) {
+    for (const r of mdl.rods) {
       rods += r.worth.at(this.rodPosition(r.id, t));
     }
-    const fuel = lib.fuelTemp.at(y[ITF]!);
-    const cool = lib.coolTemp.at(y[ITC]!);
-    const xe = lib.xenon.at(y[IX]!);
-    const base = lib.refRho + lib.calibration;
+    const fuel = mdl.fuelTemp.at(y[ITF]!);
+    const cool = mdl.coolTemp.at(y[ITC]!);
+    const xe = mdl.xenon.at(y[IX]!);
+    const base = mdl.refRho + mdl.calibration;
     return {
       total: base + this.extraRho + rods + fuel + cool + xe,
-      reference: lib.refRho,
-      calibration: lib.calibration,
+      reference: mdl.refRho,
+      calibration: mdl.calibration,
       fault: this.extraRho,
       rods,
       fuel,
@@ -490,37 +486,37 @@ export class Engine {
 
   rhs(t: number, y: number[]): number[] {
     this.diag.rhsCalls += 1;
-    const lib = this.lib;
+    const mdl = this.model;
     const P = y[IP]!;
     const tf = y[ITF]!;
     const tc = y[ITC]!;
     const i_ = y[II]!;
     const x_ = y[IX]!;
 
-    let rho = lib.refRho + lib.calibration + this.extraRho;
-    for (const r of lib.rods) {
+    let rho = mdl.refRho + mdl.calibration + this.extraRho;
+    for (const r of mdl.rods) {
       rho += r.worth.at(this.rodPosition(r.id, t));
     }
-    rho += lib.fuelTemp.at(tf) + lib.coolTemp.at(tc) + lib.xenon.at(x_);
+    rho += mdl.fuelTemp.at(tf) + mdl.coolTemp.at(tc) + mdl.xenon.at(x_);
 
-    const L = lib.genTime;
+    const L = mdl.genTime;
     const d = new Array<number>(y.length).fill(0.0);
-    d[IP] = ((rho - lib.betaTotal) / L) * P + lib.extSource;
+    d[IP] = ((rho - mdl.betaTotal) / L) * P + mdl.extSource;
     for (let k = 0; k < 6; k++) {
       const c = y[IC0 + k]!;
-      d[IP] += lib.lam[k]! * c;
-      d[IC0 + k] = (lib.beta[k]! / L) * P - lib.lam[k]! * c;
+      d[IP] += mdl.lam[k]! * c;
+      d[IC0 + k] = (mdl.beta[k]! / L) * P - mdl.lam[k]! * c;
     }
     const q_hx =
-      Object.hasOwn(this.pumps, lib.hxPump) && this.pumps[lib.hxPump]
-        ? lib.UA * (tc - lib.sinkTemp)
+      mdl.hxPump !== null && Object.hasOwn(this.pumps, mdl.hxPump) && this.pumps[mdl.hxPump]
+        ? mdl.UA * (tc - mdl.sinkTemp)
         : 0.0;
-    const q_fc = lib.hA * (tf - tc);
-    d[ITF] = (lib.fuelFraction * P - q_fc) / (lib.fuelMass * lib.fuelCp.at(tf));
-    d[ITC] = ((1.0 - lib.fuelFraction) * P + q_fc - q_hx) / (lib.coolMass * lib.coolCp);
-    const phi = lib.fluxPerWatt * P;
-    d[II] = lib.gammaI * lib.sigmaF * phi - lib.lambdaI * i_;
-    d[IX] = lib.gammaX * lib.sigmaF * phi + lib.lambdaI * i_ - lib.lambdaX * x_ - lib.sigmaX * phi * x_;
+    const q_fc = mdl.hA * (tf - tc);
+    d[ITF] = (mdl.fuelFraction * P - q_fc) / (mdl.fuelMass * mdl.fuelCp.at(tf));
+    d[ITC] = ((1.0 - mdl.fuelFraction) * P + q_fc - q_hx) / (mdl.coolMass * mdl.coolCp);
+    const phi = mdl.fluxPerWatt * P;
+    d[II] = mdl.gammaI * mdl.sigmaF * phi - mdl.lambdaI * i_;
+    d[IX] = mdl.gammaX * mdl.sigmaF * phi + mdl.lambdaI * i_ - mdl.lambdaX * x_ - mdl.sigmaX * phi * x_;
     d[IEP] = P;
     d[IEH] = q_hx;
     for (const ins of this.lagged) {
@@ -889,7 +885,7 @@ export class Engine {
   }
 
   private _sampleInstruments(t: number): void {
-    for (const ins of this.lib.instruments) {
+    for (const ins of this.model.instruments) {
       const z = this.rng.normal(); // always drawn
       const iid = ins.id;
       let v: number;
@@ -921,7 +917,7 @@ export class Engine {
     // non-latching trips clear when their condition clears
     const active = [...this.activeTrips];
     for (const tid of active) {
-      const tr = this.lib.trips.find((x: any) => x.id === tid);
+      const tr = this.model.trips.find((x: any) => x.id === tid);
       if (tr && !evalPredicate(tr.predicate, get, tr.input)) {
         this.activeTrips = this.activeTrips.filter((x) => x !== tid);
       }
@@ -944,14 +940,14 @@ export class Engine {
   }
 
   private _checkRejectTables(): void {
-    const lib = this.lib;
+    const mdl = this.model;
     const checks: [Table, number, string][] = [
-      [lib.fuelTemp, this.y[ITF]!, "fuelTemp"],
-      [lib.coolTemp, this.y[ITC]!, "coolantTemp"],
-      [lib.xenon, this.y[IX]!, "xenon"],
-      [lib.fuelCp, this.y[ITF]!, "fuelCp"],
+      [mdl.fuelTemp, this.y[ITF]!, "fuelTemp"],
+      [mdl.coolTemp, this.y[ITC]!, "coolantTemp"],
+      [mdl.xenon, this.y[IX]!, "xenon"],
+      [mdl.fuelCp, this.y[ITF]!, "fuelCp"],
     ];
-    for (const r of lib.rods) {
+    for (const r of mdl.rods) {
       checks.push([r.worth, this.rodPosition(r.id, this.t), `rod.${r.id}`]);
     }
     for (const [table, x, name] of checks) {
@@ -979,7 +975,7 @@ export class Engine {
 
   private _interlockBlock(ctype: string): any {
     const get = (s: string) => this._signal(s, this.t, this.y);
-    for (const il of this.lib.interlocks) {
+    for (const il of this.model.interlocks) {
       if (il.blocks.includes(ctype) && evalPredicate(il.when, get)) {
         return il;
       }
@@ -1020,7 +1016,7 @@ export class Engine {
         if (direction === "stop") {
           this.motions[rid] = { kind: "still", t0: t, x0: x };
         } else {
-          const v = this.lib.rodById[rid]!.speed * (direction === "out" ? 1.0 : -1.0);
+          const v = this.model.rodById[rid]!.speed * (direction === "out" ? 1.0 : -1.0);
           this.motions[rid] = { kind: "move", t0: t, x0: x, v };
         }
       }
@@ -1029,7 +1025,7 @@ export class Engine {
       if (typeof rid !== "string" || !Object.hasOwn(this.motions, rid)) {
         status = "rejected";
         reason = "REJ_UNKNOWN_ROD";
-      } else if (!this.lib.rodById[rid]!.pulseCapable) {
+      } else if (!this.model.rodById[rid]!.pulseCapable) {
         status = "rejected";
         reason = "REJ_NOT_PULSE_CAPABLE";
       } else if (il) {
@@ -1043,7 +1039,7 @@ export class Engine {
       }
     } else if (ctype === "mode.set") {
       const mode = cmd.mode;
-      if (typeof mode !== "string" || !this.lib.modes.includes(mode)) {
+      if (typeof mode !== "string" || !this.model.modes.includes(mode)) {
         status = "rejected";
         reason = "REJ_UNKNOWN_MODE";
       } else if (il) {
@@ -1073,7 +1069,7 @@ export class Engine {
       const get = (s: string) => this._signal(s, t, this.y);
       const still = this.latched.filter((tid) => {
         if (tid === "manual") return false;
-        const tr = this.lib.trips.find((x: any) => x.id === tid)!;
+        const tr = this.model.trips.find((x: any) => x.id === tid)!;
         return evalPredicate(tr.predicate, get, tr.input);
       });
       if (still.length > 0) {
@@ -1087,7 +1083,7 @@ export class Engine {
     } else if (ctype === "fault.instrument") {
       const iid = cmd.instrument;
       const kind = cmd.kind;
-      if (typeof iid !== "string" || !this.lib.instruments.some((i: any) => i.id === iid)) {
+      if (typeof iid !== "string" || !this.model.instruments.some((i: any) => i.id === iid)) {
         status = "rejected";
         reason = "REJ_UNKNOWN_INSTRUMENT";
       } else if (kind === "clear") {
@@ -1141,53 +1137,52 @@ export class Engine {
   }
 
   validity(): Record<string, any> {
-    const lib = this.lib;
-    const dom = this.lib.domain;
-    const reasons: string[] = [];
-    if (lib.status !== "validated-for-domain") {
-      reasons.push("R_LIBRARY_" + lib.status.toUpperCase().replace(/-/g, "_"));
-    }
+    const mdl = this.model;
+    const dom = this.model.validity;
     const out: string[] = [];
-    for (const r of lib.rods) {
-      const [lo, hi] = dom.rods[r.id];
-      const pos = this.rodPosition(r.id, this.t);
-      if (!(lo <= pos && pos <= hi)) {
-        out.push(`R_DOMAIN_ROD_${r.id}`);
+    const reasons: string[] = [];
+    if (dom === null) {
+      // params without a validity section claim no domain
+      reasons.push("R_PARAMS_UNVALIDATED");
+    } else {
+      if (dom.status !== "validated-for-domain") {
+        reasons.push("R_LIBRARY_" + dom.status.toUpperCase().replace(/-/g, "_"));
       }
-    }
-    const checks: [string, number][] = [
-      ["TFUEL", this.y[ITF]!],
-      ["TCOOLANT", this.y[ITC]!],
-      ["XENON", this.y[IX]!],
-    ];
-    const domKeyMap: Record<string, string> = {
-      TFUEL: "Tfuel",
-      TCOOLANT: "Tcoolant",
-      XENON: "xenon",
-    };
-    for (const [name, val] of checks) {
-      const [lo, hi] = dom[domKeyMap[name]!];
-      if (!(lo <= val && val <= hi)) {
-        out.push(`R_DOMAIN_${name}`);
+      for (const r of mdl.rods) {
+        const [lo, hi] = dom.rods[r.id]!;
+        const pos = this.rodPosition(r.id, this.t);
+        if (!(lo! <= pos && pos <= hi!)) {
+          out.push(`R_DOMAIN_ROD_${r.id}`);
+        }
       }
-    }
+      const checks: [string, number[], number][] = [
+        ["TFUEL", dom.Tfuel, this.y[ITF]!],
+        ["TCOOLANT", dom.Tcoolant, this.y[ITC]!],
+        ["XENON", dom.xenon, this.y[IX]!],
+      ];
+      for (const [name, [lo, hi], val] of checks) {
+        if (!(lo! <= val && val <= hi!)) {
+          out.push(`R_DOMAIN_${name}`);
+        }
+      }
 
-    const moved: Record<string, number> = {};
-    for (const r of lib.rods) {
-      const pos = this.rodPosition(r.id, this.t);
-      if (Math.abs(pos - lib.refRods[r.id]!) > 1e-9) {
-        moved[r.id] = pos;
+      const moved: Record<string, number> = {};
+      for (const r of mdl.rods) {
+        const pos = this.rodPosition(r.id, this.t);
+        if (Math.abs(pos - mdl.refRods[r.id]!) > 1e-9) {
+          moved[r.id] = pos;
+        }
       }
-    }
-    if (Object.keys(moved).length >= 2) {
-      const covered = dom.jointChecked.some((jc: any) =>
-        lib.rods.every((r) => {
-          const refPos = Object.hasOwn(jc.rods, r.id) ? jc.rods[r.id] : lib.refRods[r.id]!;
-          return Math.abs(refPos - this.rodPosition(r.id, this.t)) <= 0.05;
-        }),
-      );
-      if (!covered) {
-        reasons.push("R_JOINT_UNCHECKED");
+      if (Object.keys(moved).length >= 2) {
+        const covered = dom.jointChecked.some((jc) =>
+          mdl.rods.every((r) => {
+            const refPos = Object.hasOwn(jc.rods, r.id) ? jc.rods[r.id]! : mdl.refRods[r.id]!;
+            return Math.abs(refPos - this.rodPosition(r.id, this.t)) <= 0.05;
+          }),
+        );
+        if (!covered) {
+          reasons.push("R_JOINT_UNCHECKED");
+        }
       }
     }
     if (this.halted) {
@@ -1198,12 +1193,12 @@ export class Engine {
   }
 
   shape(): number[] {
-    const s = this.lib.shapes;
-    const lib = this.lib;
-    const E = s.bins.elements.length;
-    const A = s.bins.axialEdgesCm.length - 1;
-    const n = E * A;
-    const out = [...lib.arrays[s.base]!];
+    const s = this.model.shape;
+    if (s === null) {
+      throw new Error("these params have no shape section");
+    }
+    const n = s.elements.length * (s.axialEdgesCm.length - 1);
+    const out = [...s.base];
 
     const add = (grid: number[], arr: number[], x: number) => {
       x = Math.min(grid[grid.length - 1]!, Math.max(grid[0]!, x));
@@ -1219,10 +1214,10 @@ export class Engine {
       }
     };
 
-    for (const [rid, d] of Object.entries<any>(s.rodDeltas)) {
-      add(d.x, lib.arrays[d.array]!, this.rodPosition(rid, this.t));
+    for (const [rid, d] of Object.entries(s.rodDeltas)) {
+      add(d.x, d.values, this.rodPosition(rid, this.t));
     }
-    add(s.tempDelta.T, lib.arrays[s.tempDelta.array]!, this.y[ITF]!);
+    add(s.tempDelta.x, s.tempDelta.values, this.y[ITF]!);
     return out;
   }
 
@@ -1280,7 +1275,7 @@ export class Engine {
     const cfg = { ...this.config };
     return {
       engineVersion: ENGINE_VERSION,
-      libraryDigest: this.lib.digest,
+      paramsDigest: this.digest,
       config: cfg,
     };
   }
@@ -1311,17 +1306,17 @@ export class Engine {
     };
   }
 
-  static restore(lib: Library, cp: Record<string, any>): Engine {
+  static restore(params: ReactorParams, cp: Record<string, any>): Engine {
     const pins = cp.pins;
     if (pins.engineVersion !== ENGINE_VERSION) {
       throw new CheckpointError(
         `checkpoint from engine ${pins.engineVersion}, this is ${ENGINE_VERSION}`,
       );
     }
-    if (pins.libraryDigest !== lib.digest) {
-      throw new CheckpointError("library digest doesn't match the checkpoint");
+    if (pins.paramsDigest !== paramsDigest(params)) {
+      throw new CheckpointError("params digest doesn't match the checkpoint");
     }
-    const e = new Engine(lib, cp.init, cp.seed, pins.config);
+    const e = new Engine(params, cp.init, cp.seed, pins.config);
     e.stepIndex = cp.stepIndex;
     e.y = [...cp.y];
     e.h = cp.h;
@@ -1354,12 +1349,12 @@ export class Engine {
     };
   }
 
-  static replay(lib: Library, session: Record<string, any>, untilStep: number): Engine {
+  static replay(params: ReactorParams, session: Record<string, any>, untilStep: number): Engine {
     const pins = session.pins;
-    if (pins.engineVersion !== ENGINE_VERSION || pins.libraryDigest !== lib.digest) {
-      throw new CheckpointError("session pins don't match this engine and library");
+    if (pins.engineVersion !== ENGINE_VERSION || pins.paramsDigest !== paramsDigest(params)) {
+      throw new CheckpointError("session pins don't match this engine and params");
     }
-    const e = new Engine(lib, session.init, session.seed, pins.config);
+    const e = new Engine(params, session.init, session.seed, pins.config);
     const cmds = [...session.commands].sort((a, b) => a.seq - b.seq);
     let k = 0;
     while (e.stepIndex < untilStep) {

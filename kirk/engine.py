@@ -1,7 +1,8 @@
 """Reference engine for capability point-kinetics/lumped-thermal-v1.
 
 Readable Python is the source of truth; the browser engine is a port of this file.
-Physics and rules: docs/plans/01-physics-core.md. Library meaning: docs/library-format.md.
+Inputs are plain params (kirk/params.py); kirk.libformat builds them from a library folder
+(meaning of each quantity: docs/library-format.md).
 
 Time is advanced in fixed outer steps (config.outerDt). Inside each outer step an
 adaptive ROS2 Rosenbrock method (order 2, L-stable) integrates the stiff system.
@@ -18,11 +19,10 @@ from __future__ import annotations
 import copy
 import math
 
-from .library import Library
+from .params import Model, ReactorParams, check_params, params_digest
 from .numerics import SplitMix64, lu_factor, lu_solve
 
-ENGINE_VERSION = "0.1.0"
-CAPABILITY = "point-kinetics/lumped-thermal-v1"
+ENGINE_VERSION = "0.2.0"
 
 DEFAULT_CONFIG = {
     "outerDt": 0.01,     # s, fixed scheduling interval
@@ -145,10 +145,11 @@ def eval_predicate(p, get, default=None) -> bool:
 # ---------------------------------------------------------------- engine
 
 class Engine:
-    def __init__(self, lib: Library, init: dict | None = None, seed: int = 1, config: dict | None = None):
-        if CAPABILITY not in lib.manifest["capabilities"]:
-            raise InitError("E_INIT_INVALID", f"library doesn't declare {CAPABILITY}")
-        self.lib = lib
+    def __init__(self, params: ReactorParams, init: dict | None = None, seed: int = 1, config: dict | None = None):
+        self.params = copy.deepcopy(params)      # the caller may change its dict later; this run keeps its inputs
+        check_params(self.params)
+        self.digest = params_digest(self.params)
+        self.model = mdl = Model(self.params)
         self.config = dict(DEFAULT_CONFIG, **(config or {}))
         method = self.config.get("method")
         if method == "ros2":
@@ -165,13 +166,10 @@ class Engine:
         self.seed = seed
         self.rng = SplitMix64(seed)
 
-        self.lagged = [i for i in lib.instruments if i["lag"] > 0 and i["signal"][6:] in LAGGABLE]
+        self.lagged = [i for i in mdl.instruments if i["lag"] > 0 and i["signal"][6:] in LAGGABLE]
         self.lag_index = {ins["id"]: NBASE + k for k, ins in enumerate(self.lagged)}
-        for ins in lib.instruments:
-            if ins["signal"] == "truth.mode":
-                raise InitError("E_INIT_INVALID", f"instrument {ins['id']} can't measure the mode")
         self.located_trips, self.boundary_trips = [], []
-        for trip in lib.trips:
+        for trip in mdl.trips:
             sigs = _pred_signals(trip["predicate"], trip["input"])
             (self.located_trips if all(s.startswith("truth.") for s in sigs) else self.boundary_trips).append(trip)
 
@@ -194,21 +192,21 @@ class Engine:
 
     # ------------------------------------------------ initial state
     def _init_state(self, init):
-        lib = self.lib
-        unknown = set(init.get("rods", {})) - set(lib.rod_by_id)
+        mdl = self.model
+        unknown = set(init.get("rods", {})) - set(mdl.rod_by_id)
         if unknown:
             raise InitError("E_INIT_INVALID", f"unknown rods {sorted(unknown)}")
-        self.motions = {r.id: {"kind": "still", "t0": 0.0, "x0": float(init.get("rods", {}).get(r.id, lib.ref_rods[r.id]))}
-                        for r in lib.rods}
+        self.motions = {r.id: {"kind": "still", "t0": 0.0, "x0": float(init.get("rods", {}).get(r.id, mdl.ref_rods[r.id]))}
+                        for r in mdl.rods}
         for rid, m in self.motions.items():
             if not 0.0 <= m["x0"] <= 1.0:
                 raise InitError("E_INIT_INVALID", f"rod {rid} position must be in [0, 1]")
-        self.mode = init.get("mode", lib.initial_mode)
-        if self.mode not in lib.modes:
+        self.mode = init.get("mode", mdl.initial_mode)
+        if self.mode not in mdl.modes:
             raise InitError("E_INIT_INVALID", f"unknown mode {self.mode!r}")
-        self.pumps = {p: bool(init.get("pumps", {}).get(p, True)) for p in lib.pumps}
-        tf = float(init.get("Tfuel", lib.ref_tfuel))
-        tc = float(init.get("Tcoolant", lib.ref_tcool))
+        self.pumps = {p: bool(init.get("pumps", {}).get(p, True)) for p in mdl.pumps}
+        tf = float(init.get("Tfuel", mdl.ref_tfuel))
+        tc = float(init.get("Tcoolant", mdl.ref_tcool))
 
         poisons = init.get("poisons", {"mode": "zero"})
         power = init.get("power", {"mode": "source-equilibrium"})
@@ -228,16 +226,16 @@ class Engine:
         elif poisons["mode"] == "given":
             i0, x0 = float(poisons["I"]), float(poisons["X"])
         elif poisons["mode"] == "equilibrium":
-            phi = lib.flux_per_watt * p0
-            i0 = lib.gamma_i * lib.sigma_f * phi / lib.lambda_i
-            x0 = (lib.gamma_i + lib.gamma_x) * lib.sigma_f * phi / (lib.lambda_x + lib.sigma_x * phi)
+            phi = mdl.flux_per_watt * p0
+            i0 = mdl.gamma_i * mdl.sigma_f * phi / mdl.lambda_i
+            x0 = (mdl.gamma_i + mdl.gamma_x) * mdl.sigma_f * phi / (mdl.lambda_x + mdl.sigma_x * phi)
         else:
             raise InitError("E_INIT_INVALID", f"unknown poisons mode {poisons['mode']!r}")
         y[II], y[IX] = i0, x0
 
         self.y = y
         rho = self.reactivity(0.0, y)["total"]
-        S, L = lib.ext_source, lib.gen_time
+        S, L = mdl.ext_source, mdl.gen_time
         if power["mode"] == "source-equilibrium":
             if S <= 0.0:
                 raise InitError("E_INIT_NO_EQUILIBRIUM", "source equilibrium needs a positive neutron source")
@@ -256,7 +254,7 @@ class Engine:
         prec = init.get("precursors", "equilibrium")
         if prec == "equilibrium":
             for i in range(6):
-                y[IC0 + i] = lib.beta[i] * p0 / (L * lib.lam[i])
+                y[IC0 + i] = mdl.beta[i] * p0 / (L * mdl.lam[i])
         else:
             if len(prec) != 6 or any(c < 0 for c in prec):
                 raise InitError("E_INIT_INVALID", "precursors must be 'equilibrium' or six values >= 0")
@@ -273,7 +271,7 @@ class Engine:
             return m["x0"]
         if k == "move":
             return min(1.0, max(0.0, m["x0"] + m["v"] * (t - m["t0"])))
-        rod = self.lib.rod_by_id[rid]
+        rod = self.model.rod_by_id[rid]
         if k == "fire":
             return min(1.0, m["x0"] + (t - m["t0"]) / rod.fire_time)
         if k == "scram":
@@ -284,7 +282,7 @@ class Engine:
         for rid, m in self.motions.items():
             if m["kind"] == "still":
                 continue
-            rod = self.lib.rod_by_id[rid]
+            rod = self.model.rod_by_id[rid]
             x = self.rod_position(rid, t)
             if m["kind"] == "scram":
                 tau = m["tau0"] + (t - m["t0"])
@@ -301,44 +299,44 @@ class Engine:
             if x <= 0.0:
                 self.motions[rid] = {"kind": "still", "t0": t, "x0": 0.0}
             else:
-                self.motions[rid] = {"kind": "scram", "t0": t, "tau0": self.lib.rod_by_id[rid].scram_tau(x)}
+                self.motions[rid] = {"kind": "scram", "t0": t, "tau0": self.model.rod_by_id[rid].scram_tau(x)}
 
     # ------------------------------------------------ physics
     def reactivity(self, t, y) -> dict:
-        lib = self.lib
+        mdl = self.model
         rods = 0.0
-        for r in lib.rods:      # explicit loop, not sum(): see numerics.py
+        for r in mdl.rods:      # explicit loop, not sum(): see numerics.py
             rods += r.worth(self.rod_position(r.id, t))
-        fuel = lib.fuel_temp(y[ITF])
-        cool = lib.cool_temp(y[ITC])
-        xe = lib.xenon(y[IX])
-        base = lib.ref_rho + lib.calibration
-        return {"total": base + self.extra_rho + rods + fuel + cool + xe, "reference": lib.ref_rho,
-                "calibration": lib.calibration, "fault": self.extra_rho,
+        fuel = mdl.fuel_temp(y[ITF])
+        cool = mdl.cool_temp(y[ITC])
+        xe = mdl.xenon(y[IX])
+        base = mdl.ref_rho + mdl.calibration
+        return {"total": base + self.extra_rho + rods + fuel + cool + xe, "reference": mdl.ref_rho,
+                "calibration": mdl.calibration, "fault": self.extra_rho,
                 "rods": rods, "fuel": fuel, "coolant": cool, "xenon": xe}
 
     def rhs(self, t, y) -> list[float]:
         self.diag["rhsCalls"] += 1
-        lib = self.lib
+        mdl = self.model
         P, tf, tc, i_, x_ = y[IP], y[ITF], y[ITC], y[II], y[IX]
-        rho = lib.ref_rho + lib.calibration + self.extra_rho
-        for r in lib.rods:
+        rho = mdl.ref_rho + mdl.calibration + self.extra_rho
+        for r in mdl.rods:
             rho += r.worth(self.rod_position(r.id, t))
-        rho += lib.fuel_temp(tf) + lib.cool_temp(tc) + lib.xenon(x_)
-        L = lib.gen_time
+        rho += mdl.fuel_temp(tf) + mdl.cool_temp(tc) + mdl.xenon(x_)
+        L = mdl.gen_time
         d = [0.0] * len(y)
-        d[IP] = (rho - lib.beta_total) / L * P + lib.ext_source
+        d[IP] = (rho - mdl.beta_total) / L * P + mdl.ext_source
         for k in range(6):
             c = y[IC0 + k]
-            d[IP] += lib.lam[k] * c
-            d[IC0 + k] = lib.beta[k] / L * P - lib.lam[k] * c
-        q_hx = lib.UA * (tc - lib.sink_temp) if self.pumps.get(lib.hx_pump, False) else 0.0
-        q_fc = lib.hA * (tf - tc)
-        d[ITF] = (lib.fuel_fraction * P - q_fc) / (lib.fuel_mass * lib.fuel_cp(tf))
-        d[ITC] = ((1.0 - lib.fuel_fraction) * P + q_fc - q_hx) / (lib.cool_mass * lib.cool_cp)
-        phi = lib.flux_per_watt * P
-        d[II] = lib.gamma_i * lib.sigma_f * phi - lib.lambda_i * i_
-        d[IX] = lib.gamma_x * lib.sigma_f * phi + lib.lambda_i * i_ - lib.lambda_x * x_ - lib.sigma_x * phi * x_
+            d[IP] += mdl.lam[k] * c
+            d[IC0 + k] = mdl.beta[k] / L * P - mdl.lam[k] * c
+        q_hx = mdl.UA * (tc - mdl.sink_temp) if self.pumps.get(mdl.hx_pump, False) else 0.0
+        q_fc = mdl.hA * (tf - tc)
+        d[ITF] = (mdl.fuel_fraction * P - q_fc) / (mdl.fuel_mass * mdl.fuel_cp(tf))
+        d[ITC] = ((1.0 - mdl.fuel_fraction) * P + q_fc - q_hx) / (mdl.cool_mass * mdl.cool_cp)
+        phi = mdl.flux_per_watt * P
+        d[II] = mdl.gamma_i * mdl.sigma_f * phi - mdl.lambda_i * i_
+        d[IX] = mdl.gamma_x * mdl.sigma_f * phi + mdl.lambda_i * i_ - mdl.lambda_x * x_ - mdl.sigma_x * phi * x_
         d[IEP] = P
         d[IEH] = q_hx
         for ins in self.lagged:
@@ -544,7 +542,7 @@ class Engine:
         self._scram_all(t)
 
     def _sample_instruments(self, t) -> None:
-        for ins in self.lib.instruments:
+        for ins in self.model.instruments:
             z = self.rng.normal()      # always drawn, so faults don't shift the random stream
             iid = ins["id"]
             if iid in self.lag_index:
@@ -568,7 +566,7 @@ class Engine:
         get = lambda s: self._signal(s, t, self.y)
         # non-latching trips clear when their condition clears
         for tid in list(self.active_trips):
-            tr = next(x for x in self.lib.trips if x["id"] == tid)
+            tr = next(x for x in self.model.trips if x["id"] == tid)
             if not eval_predicate(tr["predicate"], get, tr["input"]):
                 self.active_trips.remove(tid)
         for tr in self.boundary_trips + ([] if not first else self.located_trips):
@@ -579,10 +577,10 @@ class Engine:
         self._check_reject_tables()
 
     def _check_reject_tables(self) -> None:
-        lib = self.lib
-        checks = [(lib.fuel_temp, self.y[ITF], "fuelTemp"), (lib.cool_temp, self.y[ITC], "coolantTemp"),
-                  (lib.xenon, self.y[IX], "xenon"), (lib.fuel_cp, self.y[ITF], "fuelCp")]
-        checks += [(r.worth, self.rod_position(r.id, self.t), f"rod.{r.id}") for r in lib.rods]
+        mdl = self.model
+        checks = [(mdl.fuel_temp, self.y[ITF], "fuelTemp"), (mdl.cool_temp, self.y[ITC], "coolantTemp"),
+                  (mdl.xenon, self.y[IX], "xenon"), (mdl.fuel_cp, self.y[ITF], "fuelCp")]
+        checks += [(r.worth, self.rod_position(r.id, self.t), f"rod.{r.id}") for r in mdl.rods]
         for table, x, name in checks:
             if table.out_of_range == "reject" and table.value(x)[1]:
                 self.halted = f"R_TABLE_REJECT_{name}"
@@ -599,7 +597,7 @@ class Engine:
 
     def _interlock_block(self, ctype: str):
         get = lambda s: self._signal(s, self.t, self.y)
-        for il in self.lib.interlocks:
+        for il in self.model.interlocks:
             if ctype in il["blocks"] and eval_predicate(il["when"], get):
                 return il
         return None
@@ -628,13 +626,13 @@ class Engine:
                 if direction == "stop":
                     self.motions[rid] = {"kind": "still", "t0": t, "x0": x}
                 else:
-                    v = self.lib.rod_by_id[rid].speed * (1.0 if direction == "out" else -1.0)
+                    v = self.model.rod_by_id[rid].speed * (1.0 if direction == "out" else -1.0)
                     self.motions[rid] = {"kind": "move", "t0": t, "x0": x, "v": v}
         elif ctype == "rod.fire":
             rid = cmd.get("rod")
             if rid not in self.motions:
                 status, reason = "rejected", "REJ_UNKNOWN_ROD"
-            elif not self.lib.rod_by_id[rid].pulse_capable:
+            elif not self.model.rod_by_id[rid].pulse_capable:
                 status, reason = "rejected", "REJ_NOT_PULSE_CAPABLE"
             elif il:
                 status, reason = "rejected", f"REJ_INTERLOCK:{il['id']}"
@@ -644,7 +642,7 @@ class Engine:
                 self.motions[rid] = {"kind": "fire", "t0": t, "x0": self.rod_position(rid, t)}
         elif ctype == "mode.set":
             mode = cmd.get("mode")
-            if mode not in self.lib.modes:
+            if mode not in self.model.modes:
                 status, reason = "rejected", "REJ_UNKNOWN_MODE"
             elif il:
                 status, reason = "rejected", f"REJ_INTERLOCK:{il['id']}"
@@ -666,8 +664,8 @@ class Engine:
         elif ctype == "trip.reset":
             get = lambda s: self._signal(s, t, self.y)
             still = [tid for tid in self.latched if tid != "manual" and eval_predicate(
-                next(x for x in self.lib.trips if x["id"] == tid)["predicate"], get,
-                next(x for x in self.lib.trips if x["id"] == tid)["input"])]
+                next(x for x in self.model.trips if x["id"] == tid)["predicate"], get,
+                next(x for x in self.model.trips if x["id"] == tid)["input"])]
             if still:
                 status, reason = "rejected", "REJ_TRIP_ACTIVE:" + ",".join(still)
             else:
@@ -676,7 +674,7 @@ class Engine:
             self.extra_rho += float(cmd.get("deltaRho", 0.0))
         elif ctype == "fault.instrument":
             iid, kind = cmd.get("instrument"), cmd.get("kind")
-            if iid not in {i["id"] for i in self.lib.instruments}:
+            if iid not in {i["id"] for i in self.model.instruments}:
                 status, reason = "rejected", "REJ_UNKNOWN_INSTRUMENT"
             elif kind == "clear":
                 self.faults.pop(iid, None)
@@ -715,25 +713,28 @@ class Engine:
             self.step()
 
     def validity(self) -> dict:
-        lib, dom, reasons = self.lib, self.lib.domain, []
-        if lib.status != "validated-for-domain":
-            reasons.append("R_LIBRARY_" + lib.status.upper().replace("-", "_"))
-        out = []
-        for r in lib.rods:
-            lo, hi = dom["rods"][r.id]
-            if not lo <= self.rod_position(r.id, self.t) <= hi:
-                out.append(f"R_DOMAIN_ROD_{r.id}")
-        for name, val in (("TFUEL", self.y[ITF]), ("TCOOLANT", self.y[ITC]), ("XENON", self.y[IX])):
-            lo, hi = dom[{"TFUEL": "Tfuel", "TCOOLANT": "Tcoolant", "XENON": "xenon"}[name]]
-            if not lo <= val <= hi:
-                out.append(f"R_DOMAIN_{name}")
-        moved = {r.id: self.rod_position(r.id, self.t) for r in lib.rods
-                 if abs(self.rod_position(r.id, self.t) - lib.ref_rods[r.id]) > 1e-9}
-        if len(moved) >= 2:
-            covered = any(all(abs(jc["rods"].get(rid, lib.ref_rods[rid]) - self.rod_position(rid, self.t)) <= 0.05
-                              for rid in lib.rod_by_id) for jc in dom["jointChecked"])
-            if not covered:
-                reasons.append("R_JOINT_UNCHECKED")
+        mdl, dom = self.model, self.model.validity
+        out, reasons = [], []
+        if dom is None:         # params without a validity section claim no domain
+            reasons.append("R_PARAMS_UNVALIDATED")
+        else:
+            if dom["status"] != "validated-for-domain":
+                reasons.append("R_LIBRARY_" + dom["status"].upper().replace("-", "_"))
+            for r in mdl.rods:
+                lo, hi = dom["rods"][r.id]
+                if not lo <= self.rod_position(r.id, self.t) <= hi:
+                    out.append(f"R_DOMAIN_ROD_{r.id}")
+            for name, val in (("TFUEL", self.y[ITF]), ("TCOOLANT", self.y[ITC]), ("XENON", self.y[IX])):
+                lo, hi = dom[{"TFUEL": "Tfuel", "TCOOLANT": "Tcoolant", "XENON": "xenon"}[name]]
+                if not lo <= val <= hi:
+                    out.append(f"R_DOMAIN_{name}")
+            moved = {r.id: self.rod_position(r.id, self.t) for r in mdl.rods
+                     if abs(self.rod_position(r.id, self.t) - mdl.ref_rods[r.id]) > 1e-9}
+            if len(moved) >= 2:
+                covered = any(all(abs(jc["rods"].get(rid, mdl.ref_rods[rid]) - self.rod_position(rid, self.t)) <= 0.05
+                                  for rid in mdl.rod_by_id) for jc in dom["jointChecked"])
+                if not covered:
+                    reasons.append("R_JOINT_UNCHECKED")
         if self.halted:
             out.append(self.halted)
         status = "outOfDomain" if out else ("unvalidated" if reasons else "supported")
@@ -741,10 +742,11 @@ class Engine:
 
     def shape(self) -> list[float]:
         """Current power shape (fractions of total power), base + rod deltas + temperature delta."""
-        s, lib = self.lib.shapes, self.lib
-        E, A = len(s["bins"]["elements"]), len(s["bins"]["axialEdgesCm"]) - 1
-        n = E * A
-        out = list(lib.arrays[s["base"]])
+        s = self.model.shape
+        if s is None:
+            raise ValueError("these params have no shape section")
+        n = len(s["elements"]) * (len(s["axialEdgesCm"]) - 1)
+        out = list(s["base"])
 
         def add(grid, arr, x):
             x = min(grid[-1], max(grid[0], x))
@@ -757,8 +759,8 @@ class Engine:
                 out[j] += (1 - w) * a[j] + w * b[j]
 
         for rid, d in s["rodDeltas"].items():
-            add(d["x"], lib.arrays[d["array"]], self.rod_position(rid, self.t))
-        add(s["tempDelta"]["T"], lib.arrays[s["tempDelta"]["array"]], self.y[ITF])
+            add(d["x"], d["values"], self.rod_position(rid, self.t))
+        add(s["tempDelta"]["x"], s["tempDelta"]["values"], self.y[ITF])
         return out
 
     def snapshot(self, include_shape: bool = False) -> dict:
@@ -788,7 +790,7 @@ class Engine:
 
     def pins(self) -> dict:
         cfg = dict(self.config)  # always includes "method": the solver is part of what a replay must reproduce
-        return {"engineVersion": ENGINE_VERSION, "libraryDigest": self.lib.digest, "config": cfg}
+        return {"engineVersion": ENGINE_VERSION, "paramsDigest": self.digest, "config": cfg}
 
     def checkpoint(self) -> dict:
         return {
@@ -803,13 +805,13 @@ class Engine:
         }
 
     @classmethod
-    def restore(cls, lib: Library, cp: dict) -> "Engine":
+    def restore(cls, params: ReactorParams, cp: dict) -> "Engine":
         pins = cp["pins"]
         if pins["engineVersion"] != ENGINE_VERSION:
             raise CheckpointError(f"checkpoint from engine {pins['engineVersion']}, this is {ENGINE_VERSION}")
-        if pins["libraryDigest"] != lib.digest:
-            raise CheckpointError("library digest doesn't match the checkpoint")
-        e = cls(lib, cp["init"], cp["seed"], pins["config"])
+        if pins["paramsDigest"] != params_digest(params):
+            raise CheckpointError("params digest doesn't match the checkpoint")
+        e = cls(params, cp["init"], cp["seed"], pins["config"])
         e.step_index, e.y, e.h = cp["stepIndex"], list(cp["y"]), cp["h"]
         e.motions, e.mode, e.pumps = copy.deepcopy(cp["motions"]), cp["mode"], dict(cp["pumps"])
         e.latched, e.active_trips, e.faults = list(cp["latched"]), list(cp["activeTrips"]), dict(cp["faults"])
@@ -827,11 +829,11 @@ class Engine:
                 "commands": copy.deepcopy(self.command_log)}
 
     @classmethod
-    def replay(cls, lib: Library, session: dict, until_step: int) -> "Engine":
+    def replay(cls, params: ReactorParams, session: dict, until_step: int) -> "Engine":
         pins = session["pins"]
-        if pins["engineVersion"] != ENGINE_VERSION or pins["libraryDigest"] != lib.digest:
-            raise CheckpointError("session pins don't match this engine and library")
-        e = cls(lib, session["init"], session["seed"], pins["config"])
+        if pins["engineVersion"] != ENGINE_VERSION or pins["paramsDigest"] != params_digest(params):
+            raise CheckpointError("session pins don't match this engine and params")
+        e = cls(params, session["init"], session["seed"], pins["config"])
         cmds = sorted(session["commands"], key=lambda c: c["seq"])
         k = 0
         while e.step_index < until_step:

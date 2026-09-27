@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { jsonForm, validateSnapshot } from "../contracts/validate";
 import { compareDocs } from "./compare";
 import { ENGINE_VERSION } from "./engine";
+import { paramsDigest } from "./params";
 import { engineVectorsDir, loadSyntheticCore } from "./testing";
 import { runScenario } from "./vectors";
 
@@ -146,7 +147,7 @@ describe("Engine golden vectors (the main oracle)", () => {
     for (const file of files) {
       const doc = JSON.parse(readFileSync(join(engineVectorsDir, file), "utf-8"));
       expect(doc.pins.engineVersion).toBe(ENGINE_VERSION);
-      expect(doc.pins.libraryDigest).toBe(lib.digest);
+      expect(doc.pins.paramsDigest).toBe(paramsDigest(lib));
     }
   });
 });

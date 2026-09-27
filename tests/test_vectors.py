@@ -9,7 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from kirk import ENGINE_VERSION, Library
+from kirk import ENGINE_VERSION, params_digest
+from kirk.libformat import load_params
 from kirk import vectors
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -139,14 +140,14 @@ class TestEngineVectors(unittest.TestCase):
         self.assertLess(abs(p_last / p_first - 1.0), 1e-8)
 
     def test_pins_match_current_engine(self):
-        lib = Library(SYNTHETIC_CORE)
+        digest = params_digest(load_params(SYNTHETIC_CORE))
         files = sorted(VECTORS_DIR.glob("*.json"))
         self.assertEqual(len(files), 6)
         for p in files:
             with self.subTest(file=p.name):
                 doc = json.loads(p.read_text(encoding="utf-8"))
                 self.assertEqual(doc["pins"]["engineVersion"], ENGINE_VERSION)
-                self.assertEqual(doc["pins"]["libraryDigest"], lib.digest)
+                self.assertEqual(doc["pins"]["paramsDigest"], digest)
 
 
 if __name__ == "__main__":

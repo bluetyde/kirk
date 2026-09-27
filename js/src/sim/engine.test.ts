@@ -2,6 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { loadParams } from "../library/adapter";
 import { nodeReader } from "../library/node-reader";
 import { validateLibrary } from "../library/validate";
 import {
@@ -17,7 +18,7 @@ import {
   InitError,
   roundHalfEven,
 } from "./engine";
-import { Table, loadLibrary } from "./library";
+import { Model } from "./params";
 import {
   comparable,
   inhourOmega,
@@ -32,9 +33,10 @@ import { nearCriticalRods } from "./vectors";
 describe("TestInitialization", () => {
   it("source equilibrium matches formula and holds", async () => {
     const L = await loadSyntheticCore();
+    const M = new Model(L);
     const e = new Engine(L, {});
     const rho = e.reactivity(0.0, e.y).total;
-    expect(Math.abs(e.y[IP]! - (-L.extSource * L.genTime) / rho)).toBeLessThanOrEqual(1e-15);
+    expect(Math.abs(e.y[IP]! - (-M.extSource * M.genTime) / rho)).toBeLessThanOrEqual(1e-15);
     const p0 = e.y[IP]!;
     e.advance(20.0);
     expect(Math.abs(e.y[IP]! / p0 - 1.0)).toBeLessThan(1e-8);
@@ -96,11 +98,12 @@ describe("TestInitialization", () => {
 describe("TestKineticsAnalytic", () => {
   it("prompt jump", async () => {
     const L = await kineticsOnlyLib();
+    const M = new Model(L);
     const e = new Engine(L, { power: { mode: "critical-equilibrium", value: 1.0 } });
     const rho = 0.001;
     e.submit({ type: "fault.reactivity", deltaRho: rho });
     e.advance(0.05);
-    const expected = L.betaTotal / (L.betaTotal - rho);
+    const expected = M.betaTotal / (M.betaTotal - rho);
     expect(Math.abs(e.y[IP]! / expected - 1.0)).toBeLessThan(3e-3);
   });
 
@@ -123,6 +126,7 @@ describe("TestKineticsAnalytic", () => {
 
   it("nordheim-fuchs pulse", async () => {
     const [L, K] = await pulseLib(false);
+    const M = new Model(L);
     const rhoP = 0.003;
     const e = new Engine(
       L,
@@ -130,7 +134,7 @@ describe("TestKineticsAnalytic", () => {
       1,
       { outerDt: 1e-3 },
     );
-    e.submit({ type: "fault.reactivity", deltaRho: L.betaTotal + rhoP });
+    e.submit({ type: "fault.reactivity", deltaRho: M.betaTotal + rhoP });
     const times: number[] = [];
     const powers: number[] = [];
     while (e.t < 0.6) {
@@ -138,7 +142,7 @@ describe("TestKineticsAnalytic", () => {
       times.push(e.t);
       powers.push(e.y[IP]!);
     }
-    const pMax = (rhoP * rhoP) / (2 * K * L.genTime);
+    const pMax = (rhoP * rhoP) / (2 * K * M.genTime);
     expect(Math.abs(e.peakPower / pMax - 1.0)).toBeLessThan(1e-3);
 
     const half = e.peakPower / 2;
@@ -154,7 +158,7 @@ describe("TestKineticsAnalytic", () => {
     }
     expect(crossings.length).toBe(2);
     expect(
-      Math.abs((crossings[1]! - crossings[0]!) / ((3.52 * L.genTime) / rhoP) - 1.0),
+      Math.abs((crossings[1]! - crossings[0]!) / ((3.52 * M.genTime) / rhoP) - 1.0),
     ).toBeLessThan(0.03);
 
     let kEnd = -1;
@@ -172,22 +176,23 @@ describe("TestKineticsAnalytic", () => {
       1,
       { outerDt: 1e-3 },
     );
-    e2.submit({ type: "fault.reactivity", deltaRho: L.betaTotal + rhoP });
+    e2.submit({ type: "fault.reactivity", deltaRho: M.betaTotal + rhoP });
     e2.advance(times[kEnd]!);
     expect(Math.abs(e2.y[IEP]! / ((2 * rhoP) / K) - 1.0)).toBeLessThan(0.03);
   });
 
   it("delayed return raises the peak", async () => {
     const [L, K] = await pulseLib(true);
+    const M = new Model(L);
     const e = new Engine(
       L,
       { power: { mode: "critical-equilibrium", value: 1.0 } },
       1,
       { outerDt: 1e-3 },
     );
-    e.submit({ type: "fault.reactivity", deltaRho: L.betaTotal + 0.003 });
+    e.submit({ type: "fault.reactivity", deltaRho: M.betaTotal + 0.003 });
     e.advance(0.4);
-    const ratio = e.peakPower / ((0.003 * 0.003) / (2 * K * L.genTime));
+    const ratio = e.peakPower / ((0.003 * 0.003) / (2 * K * M.genTime));
     expect(ratio).toBeGreaterThan(1.01);
     expect(ratio).toBeLessThan(1.06);
   });
@@ -207,6 +212,7 @@ describe("TestPoisonsAndEnergy", () => {
 
   it("xenon peak after shutdown", async () => {
     const L = await loadSyntheticCore();
+    const M = new Model(L);
     const e = new Engine(
       L,
       { power: { mode: "given", value: 1e5 }, poisons: { mode: "equilibrium" } },
@@ -215,8 +221,8 @@ describe("TestPoisonsAndEnergy", () => {
     );
     const I0 = e.y[II]!;
     const X0 = e.y[IX]!;
-    const li = L.lambdaI;
-    const lx = L.lambdaX;
+    const li = M.lambdaI;
+    const lx = M.lambdaX;
     const xs: [number, number][] = [];
     for (let i = 0; i < 20 * 60; i++) {
       e.step();
@@ -254,6 +260,7 @@ describe("TestPoisonsAndEnergy", () => {
 
   it("energy balance", async () => {
     const L = await loadSyntheticCore();
+    const M = new Model(L);
     const e = new Engine(
       L,
       { rods: nearCriticalRods(L, 0.0), power: { mode: "given", value: 1e5 } },
@@ -264,8 +271,8 @@ describe("TestPoisonsAndEnergy", () => {
     const tc0 = e.y[ITC]!;
     e.advance(200.0);
     const stored =
-      L.fuelMass * L.fuelCp.integral(tf0, e.y[ITF]!) +
-      L.coolMass * L.coolCp * (e.y[ITC]! - tc0);
+      M.fuelMass * M.fuelCp.integral(tf0, e.y[ITF]!) +
+      M.coolMass * M.coolCp * (e.y[ITC]! - tc0);
     expect(e.y[IEP]!).toBeGreaterThan(1e5);
     expect(Math.abs((stored + e.y[IEH]!) / e.y[IEP]! - 1.0)).toBeLessThan(1e-4);
   });
@@ -295,6 +302,7 @@ describe("TestRulesAndEvents", () => {
 
   it("pulse by commands and feedback shutdown", async () => {
     const L = await loadSyntheticCore();
+    const M = new Model(L);
     const e = new Engine(L, { rods: nearCriticalRods(L, -0.0005) });
     e.submit({ type: "mode.set", mode: "pulse" });
     e.step();
@@ -304,7 +312,7 @@ describe("TestRulesAndEvents", () => {
     expect(fired.status).toBe("accepted");
     expect(e.peakPower).toBeGreaterThan(1e7);
     expect(e.y[IP]!).toBeLessThan(e.peakPower / 100);
-    expect(e.y[ITF]! - L.refTfuel).toBeGreaterThan(50.0);
+    expect(e.y[ITF]! - M.refTfuel).toBeGreaterThan(50.0);
   });
 
   it("scram inserts all rods on the profile", async () => {
@@ -474,8 +482,8 @@ describe("TestM1ReviewRegressions", () => {
     const times: number[] = [];
     for (const dt of [0.01, 0.001]) {
       const L = await loadSyntheticCore();
-      L.trips = [
-        ...L.trips,
+      L.plant.trips = [
+        ...L.plant.trips,
         {
           id: "window",
           input: "truth.rod.transient",
@@ -483,7 +491,6 @@ describe("TestM1ReviewRegressions", () => {
           latching: true,
         },
       ];
-      await L.markModified("window-trip");
       const e = new Engine(L, { rods: nearCriticalRods(L, -0.0005) }, 1, { outerDt: dt });
       e.submit({ type: "rod.move", rod: "transient", direction: "out" }); // 0.02/s: inside the window at 4-5 ms
       e.advance(0.02);
@@ -498,9 +505,7 @@ describe("TestM1ReviewRegressions", () => {
 
   it("test_3_replay_of_a_halted_run_returns", async () => {
     const L = await loadSyntheticCore();
-    const t = L.fuelTemp;
-    L.fuelTemp = new Table(t.xs, t.ys, "reject");
-    await L.markModified("reject-fuel-temp");
+    L.feedback.fuelTemp.outOfRange = "reject";
     const e = new Engine(L, { Tfuel: 1300.0 });
     expect(e.halted).toBeTruthy();
     let stepCount = 0;
@@ -523,8 +528,7 @@ describe("TestM1ReviewRegressions", () => {
 
   it("test_4_heat_capacity_reject_policy_is_enforced", async () => {
     const L = await loadSyntheticCore();
-    L.fuelCp = new Table([293.15, 300.0], [300.0, 300.0], "reject");
-    await L.markModified("reject-cp");
+    L.thermal.fuelCp = { x: [293.15, 300.0], y: [300.0, 300.0], outOfRange: "reject" };
     const e = new Engine(L, { Tfuel: 350.0 });
     expect(e.halted).toBe("R_TABLE_REJECT_fuelCp");
   });
@@ -533,7 +537,7 @@ describe("TestM1ReviewRegressions", () => {
     const L = await loadSyntheticCore();
     const e = new Engine(L, { rods: nearCriticalRods(L, -0.0005) });
     e.step();
-    e.submit({ type: "pump.set", pump: L.pumps[0]!, on: false });
+    e.submit({ type: "pump.set", pump: L.plant.pumps[0]!, on: false });
     const r = Engine.replay(L, JSON.parse(JSON.stringify(e.session())), e.stepIndex);
     expect([r.pending.length, r.nextSeq]).toEqual([e.pending.length, e.nextSeq]);
     e.step();
@@ -557,9 +561,9 @@ describe("TestM1ReviewRegressions", () => {
       writeFileSync(join(dst, "manifest.json"), text, "utf-8");
       const reader = nodeReader(dst);
       expect(await validateLibrary(reader)).toEqual([]);
-      const loaded = await loadLibrary(reader);
+      const loaded = await loadParams(reader);
       const baseLib = await loadSyntheticCore();
-      expect(loaded.arrays["base"]).toEqual(baseLib.arrays["base"]);
+      expect(loaded.shape!.base).toEqual(baseLib.shape!.base);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }

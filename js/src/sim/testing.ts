@@ -4,38 +4,46 @@
 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadParams } from "../library/adapter";
 import { nodeReader } from "../library/node-reader";
 import { Engine } from "./engine";
-import { Table, loadLibrary, type Library } from "./library";
+import { Model, type ReactorParams } from "./params";
 import { nearCriticalRods } from "./vectors";
 
 export const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 export const syntheticCorePath = join(repoRoot, "schema", "vectors", "synthetic-core");
 export const engineVectorsDir = join(repoRoot, "schema", "engine-vectors");
 
-export async function loadSyntheticCore(): Promise<Library> {
-  return await loadLibrary(nodeReader(syntheticCorePath));
+let fixture: ReactorParams | null = null;
+
+/** Synthetic-core params: a fresh copy each call, so a test can change it freely. */
+export async function loadSyntheticCore(): Promise<ReactorParams> {
+  fixture ??= await loadParams(nodeReader(syntheticCorePath));
+  return structuredClone(fixture);
 }
 
-export async function kineticsOnlyLib(): Promise<Library> {
+/**
+ * Synthetic core with no source, no feedback, and a calibration that makes the reference state critical.
+ * The params digest follows the content, so these runs can't pass as the real fixture.
+ */
+export async function kineticsOnlyLib(): Promise<ReactorParams> {
   const L = await loadSyntheticCore();
-  L.extSource = 0.0;
-  L.calibration = -L.refRho;
-  const flat = new Table([0.0, 5000.0], [0.0, 0.0]);
-  L.fuelTemp = flat;
-  L.coolTemp = flat;
-  L.xenon = new Table([0.0, 1e30], [0.0, 0.0]);
-  await L.markModified("kinetics-only");
+  L.kinetics.extSource = 0.0;
+  L.reference.calibration = -L.reference.rho;
+  L.feedback.fuelTemp = { x: [0.0, 5000.0], y: [0.0, 0.0] };
+  L.feedback.coolantTemp = { x: [0.0, 5000.0], y: [0.0, 0.0] };
+  L.feedback.xenon = { x: [0.0, 1e30], y: [0.0, 0.0] };
   return L;
 }
 
-export function inhourOmega(L: Library, rho: number): number {
+export function inhourOmega(L: ReactorParams, rho: number): number {
+  const M = new Model(L);
   const f = (w: number) => {
     let sum = 0.0;
-    for (let i = 0; i < L.beta.length; i++) {
-      sum += (L.beta[i]! * w) / (w + L.lam[i]!);
+    for (let i = 0; i < M.beta.length; i++) {
+      sum += (M.beta[i]! * w) / (w + M.lam[i]!);
     }
-    return w * L.genTime + sum - rho;
+    return w * M.genTime + sum - rho;
   };
   let lo = 1e-12;
   let hi = 1e3;
@@ -50,19 +58,18 @@ export function inhourOmega(L: Library, rho: number): number {
   return 0.5 * (lo + hi);
 }
 
-export async function pulseLib(delayedReturn: boolean): Promise<[Library, number]> {
+export async function pulseLib(delayedReturn: boolean): Promise<[ReactorParams, number]> {
   const L = await kineticsOnlyLib();
   const alpha = -1e-4;
   const c = 320.0;
-  const Tref = L.refTfuel;
-  L.fuelTemp = new Table([0.0, 3000.0], [alpha * (0.0 - Tref), alpha * (3000.0 - Tref)]);
-  L.fuelCp = new Table([0.0, 3000.0], [c, c]);
-  L.hA = 0.0;
+  const Tref = L.reference.Tfuel;
+  L.feedback.fuelTemp = { x: [0.0, 3000.0], y: [alpha * (0.0 - Tref), alpha * (3000.0 - Tref)] };
+  L.thermal.fuelCp = { x: [0.0, 3000.0], y: [c, c] };
+  L.thermal.hA = 0.0;
   if (!delayedReturn) {
-    L.lam = [1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12];
+    L.kinetics.lambda = [1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12];
   }
-  await L.markModified(`nordheim-fuchs-${delayedReturn}`);
-  return [L, Math.abs(alpha) / (L.fuelMass * c)];
+  return [L, Math.abs(alpha) / (L.thermal.fuelMass * c)];
 }
 
 export function comparable(cp: Record<string, any>): Record<string, any> {
@@ -71,7 +78,7 @@ export function comparable(cp: Record<string, any>): Record<string, any> {
   return copy;
 }
 
-export function scriptedRun(L: Library, chunks: number[]): Engine {
+export function scriptedRun(L: ReactorParams, chunks: number[]): Engine {
   const e = new Engine(L, { rods: nearCriticalRods(L, -0.0005) }, 42);
   const script: Record<number, any[]> = {
     0: [{ type: "rod.move", rod: "transient", direction: "out" }],
@@ -92,7 +99,7 @@ export function scriptedRun(L: Library, chunks: number[]): Engine {
   return e;
 }
 
-export function scriptedRunRos3p(L: Library, chunks: number[]): Engine {
+export function scriptedRunRos3p(L: ReactorParams, chunks: number[]): Engine {
   const e = new Engine(L, { rods: nearCriticalRods(L, -0.0005) }, 42, { method: "ros3p" });
   const script: Record<number, any[]> = {
     0: [{ type: "rod.move", rod: "transient", direction: "out" }],
